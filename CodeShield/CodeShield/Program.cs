@@ -1,11 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using CodeShield.Data;
+using CodeShield.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddHttpClient<IGitHubService, GitHubService>();
+
 
 // Register ApplicationDbContext
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
