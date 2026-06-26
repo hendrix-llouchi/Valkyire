@@ -6,40 +6,47 @@
 <div class="container mt-5">
     <div class="row justify-content-center">
         <div class="col-md-5">
-            <div class="card shadow border-0 rounded-3">
-                <div class="card-body p-4 p-sm-5">
-                    <h2 class="card-title text-center fw-bold fs-3 mb-4">Create an Account</h2>
-                    
-                    <form asp-controller="Account" asp-action="Register" method="post" novalidate>
-                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3" role="alert"></div>
-
-                        <div class="form-floating mb-3">
-                            <input asp-for="Email" class="form-control" placeholder="name@example.com" aria-required="true" />
-                            <label asp-for="Email"></label>
-                            <span asp-validation-for="Email" class="text-danger small"></span>
-                        </div>
-
-                        <div class="form-floating mb-3">
-                            <input asp-for="Password" type="password" class="form-control" placeholder="Password" aria-required="true" />
-                            <label asp-for="Password"></label>
-                            <span asp-validation-for="Password" class="text-danger small"></span>
-                        </div>
-
-                        <div class="form-floating mb-4">
-                            <input asp-for="ConfirmPassword" type="password" class="form-control" placeholder="Confirm Password" aria-required="true" />
-                            <label asp-for="ConfirmPassword"></label>
-                            <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
-                        </div>
-
-                        <button class="w-100 btn btn-lg btn-primary rounded-3 mb-3" type="submit">Register</button>
-                        
-                        <div class="text-center">
-                            <p class="text-muted small">
-                                Already have an account? <a asp-controller="Account" asp-action="Login" class="text-decoration-none">Log in instead</a>.
-                            </p>
-                        </div>
-                    </form>
+            <div class="cs-card p-4 p-sm-5">
+                <div class="text-center mb-4">
+                    <span class="fs-1">🛡️</span>
+                    <h2 class="fw-bold mt-2 text-dark">Create Account</h2>
+                    <p class="text-muted small">Protect your repository against safety risks</p>
                 </div>
+                
+                <form asp-controller="Account" asp-action="Register" method="post" novalidate>
+                    @if (!ViewData.ModelState.IsValid && ViewData.ModelState[string.Empty]?.Errors.Count > 0)
+                    {
+                        <div class="alert cs-alert-danger p-3 mb-4 rounded-3" role="alert">
+                            <div asp-validation-summary="ModelOnly" class="mb-0"></div>
+                        </div>
+                    }
+
+                    <div class="mb-3">
+                        <label asp-for="Email" class="form-label fw-semibold text-secondary small"></label>
+                        <input asp-for="Email" class="form-control cs-input" placeholder="name@example.com" aria-required="true" />
+                        <span asp-validation-for="Email" class="text-danger small mt-1 d-block"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Password" class="form-label fw-semibold text-secondary small"></label>
+                        <input asp-for="Password" type="password" class="form-control cs-input" placeholder="••••••••" aria-required="true" />
+                        <span asp-validation-for="Password" class="text-danger small mt-1 d-block"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="ConfirmPassword" class="form-label fw-semibold text-secondary small"></label>
+                        <input asp-for="ConfirmPassword" type="password" class="form-control cs-input" placeholder="••••••••" aria-required="true" />
+                        <span asp-validation-for="ConfirmPassword" class="text-danger small mt-1 d-block"></span>
+                    </div>
+
+                    <button class="w-100 cs-btn cs-btn-primary mb-3 text-white" type="submit">Create Account</button>
+                    
+                    <div class="text-center mt-3">
+                        <p class="text-muted small mb-0">
+                            Already have an account? <a asp-controller="Account" asp-action="Login" class="text-decoration-none fw-semibold text-primary">Log in instead</a>.
+                        </p>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

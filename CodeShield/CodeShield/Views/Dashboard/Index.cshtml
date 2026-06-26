@@ -2,22 +2,110 @@
     ViewData["Title"] = "Dashboard";
 }
 
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow border-0 rounded-3">
-                <div class="card-body p-5 text-center">
-                    <div class="mb-4">
-                        <span class="fs-1 text-primary">🛡️</span>
-                    </div>
-                    <h1 class="display-5 fw-bold mb-3">Dashboard</h1>
-                    <p class="lead text-muted mb-4">
-                        Welcome back, <strong class="text-dark">@User.Identity?.Name</strong>!
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="container py-4">
+    <!-- Welcome Header -->
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <div>
+            <h1 class="h3 fw-bold text-dark mb-1">Security Control Center</h1>
+            <p class="text-muted small mb-0">Welcome back, @User.Identity?.Name. Overview of your repository security status.</p>
+        </div>
+        <div>
+            <a asp-controller="Scan" asp-action="Index" class="cs-btn cs-btn-primary text-white text-decoration-none d-flex align-items-center gap-2">
+                <span>🔍</span> Scan Repository
+            </a>
+        </div>
+    </div>
+
+    <!-- Metrics Cards Grid -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="cs-card p-4 d-flex align-items-center justify-content-between">
+                <div>
+                    <p class="text-muted small fw-semibold text-uppercase mb-1">Total Scanned</p>
+                    <h3 class="fw-bold mb-0 text-dark">3 Repositories</h3>
+                </div>
+                <div class="fs-2 bg-light p-3 rounded-3">📦</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="cs-card p-4 d-flex align-items-center justify-content-between">
+                <div>
+                    <p class="text-muted small fw-semibold text-uppercase mb-1">Vulnerabilities Found</p>
+                    <h3 class="fw-bold mb-0 text-danger">8 Vulnerabilities</h3>
+                </div>
+                <div class="fs-2 bg-light p-3 rounded-3 text-danger">⚠️</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="cs-card p-4 d-flex align-items-center justify-content-between">
+                <div>
+                    <p class="text-muted small fw-semibold text-uppercase mb-1">Security Rating</p>
+                    <h3 class="fw-bold mb-0 text-success">Grade A-</h3>
+                </div>
+                <div class="grade-badge grade-b fs-4 fw-bold" style="width: 50px; height: 50px;">B</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Quick Scan Card -->
+        <div class="col-lg-6">
+            <div class="cs-card p-4 h-100 d-flex flex-column justify-content-between">
+                <div>
+                    <div class="fs-2 mb-3">🛡️</div>
+                    <h5 class="fw-bold text-dark mb-2">Run Security Check</h5>
+                    <p class="text-secondary small">
+                        Perform an on-demand scan of your public GitHub repositories. CodeShield detects dependencies for npm and NuGet, and checks code patterns for security risks in C# and Python.
                     </p>
-                    <div class="border-top pt-4">
-                        <p class="text-muted small">
-                            This is a placeholder page for the CodeShield security dashboard. The real dashboard features will be built here in future iterations.
-                        </p>
+                </div>
+                <div class="d-grid mt-4">
+                    <a asp-controller="Scan" asp-action="Index" class="cs-btn cs-btn-primary text-white text-center text-decoration-none">
+                        Launch Scanner Console
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Scans List -->
+        <div class="col-lg-6">
+            <div class="cs-card p-4 h-100">
+                <h5 class="fw-bold text-dark mb-4">Recent Scan Activity</h5>
+                <div class="d-flex flex-column gap-3">
+                    <div class="d-flex justify-content-between align-items-center p-3 rounded-3 border bg-light">
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="fs-4">🐍</span>
+                            <div>
+                                <h6 class="fw-bold text-dark mb-0 small">my-python-app</h6>
+                                <span class="text-muted" style="font-size: 0.75rem;">Scanned 2 hours ago</span>
+                            </div>
+                        </div>
+                        <span class="badge bg-warning text-dark px-3 py-2 font-monospace">Python only</span>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center p-3 rounded-3 border bg-light">
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="fs-4">🟢</span>
+                            <div>
+                                <h6 class="fw-bold text-dark mb-0 small">express-web-server</h6>
+                                <span class="text-muted" style="font-size: 0.75rem;">Scanned yesterday</span>
+                            </div>
+                        </div>
+                        <span class="badge bg-success px-3 py-2">Grade A</span>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center p-3 rounded-3 border bg-light">
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="fs-4">🔵</span>
+                            <div>
+                                <h6 class="fw-bold text-dark mb-0 small">dotnet-monolith-api</h6>
+                                <span class="text-muted" style="font-size: 0.75rem;">Scanned 3 days ago</span>
+                            </div>
+                        </div>
+                        <span class="badge bg-danger px-3 py-2">Grade D</span>
                     </div>
                 </div>
             </div>

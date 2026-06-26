@@ -3,213 +3,267 @@
     ViewData["Title"] = "Scan Repository";
 }
 
-<div class="container mt-5">
+<div class="container py-4">
     <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow border-0 rounded-3 mb-4">
-                <div class="card-body p-5">
-                    <div class="text-center mb-4">
-                        <span class="fs-1">🔍</span>
-                        <h1 class="display-6 fw-bold mt-2">Scan GitHub Repository</h1>
-                        <p class="text-muted">Enter the URL of a public GitHub repository to retrieve its file list.</p>
+        <div class="col-lg-9">
+            <!-- Scan Form Card -->
+            <div class="cs-card p-4 p-md-5 mb-4" id="scan-form-card">
+                <div class="text-center mb-4">
+                    <span class="fs-1">🔍</span>
+                    <h1 class="h3 fw-bold text-dark mt-2">Scan GitHub Repository</h1>
+                    <p class="text-muted small">Analyze a public GitHub repository for vulnerable dependencies and security issues.</p>
+                </div>
+
+                <form asp-controller="Scan" asp-action="Index" method="post" id="scan-form">
+                    @Html.AntiForgeryToken()
+                    
+                    <div class="mb-3">
+                        <label for="RepositoryUrl" class="form-label fw-semibold text-secondary small">GitHub Repository URL</label>
+                        <input type="text" 
+                               class="form-control cs-input w-100 @(Model.IsSubmitted && !string.IsNullOrEmpty(Model.ErrorMessage) ? "is-invalid" : "")" 
+                               id="RepositoryUrl" 
+                               name="RepositoryUrl" 
+                               value="@Model.RepositoryUrl" 
+                               placeholder="https://github.com/owner/repository" 
+                               required />
+                        
+                        @if (Model.IsSubmitted && !string.IsNullOrEmpty(Model.ErrorMessage))
+                        {
+                            <div class="invalid-feedback d-block mt-2 fw-medium text-danger small">
+                                ⚠️ @Model.ErrorMessage
+                            </div>
+                        }
                     </div>
 
-                    <form asp-controller="Scan" asp-action="Index" method="post">
-                        @Html.AntiForgeryToken()
-                        
-                        <div class="mb-3">
-                            <label for="RepositoryUrl" class="form-label fw-semibold">GitHub Repository URL</label>
-                            <input type="text" 
-                                   class="form-control form-control-lg @(Model.IsSubmitted && !string.IsNullOrEmpty(Model.ErrorMessage) ? "is-invalid" : "")" 
-                                   id="RepositoryUrl" 
-                                   name="RepositoryUrl" 
-                                   value="@Model.RepositoryUrl" 
-                                   placeholder="https://github.com/owner/repo" 
-                                   required />
-                            
-                            @if (Model.IsSubmitted && !string.IsNullOrEmpty(Model.ErrorMessage))
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="cs-btn cs-btn-primary text-white">Analyze Repository</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Loading Spinner State -->
+            <div class="cs-card p-5 mb-4 text-center d-none" id="scan-loader">
+                <div class="cs-loader mb-4"></div>
+                <h4 class="fw-bold text-dark">Analyzing Repository...</h4>
+                <p class="text-muted small mb-0">Checking file structure, extracting package versions, and querying vulnerability indexes. Please do not close this window.</p>
+            </div>
+
+            @if (Model.IsSubmitted && string.IsNullOrEmpty(Model.ErrorMessage))
+            {
+                <div id="scan-results-container">
+                    <!-- Warning Banners -->
+                    @if (Model.DetectedEcosystems != null && Model.DetectedEcosystems.Contains(CodeShield.Models.Ecosystem.Python) && !Model.DetectedEcosystems.Contains(CodeShield.Models.Ecosystem.Npm) && !Model.DetectedEcosystems.Contains(CodeShield.Models.Ecosystem.NuGet))
+                    {
+                        <div class="alert cs-alert-warning border-0 shadow-sm p-4 mb-4 rounded-3 d-flex align-items-start" id="python-warning-banner">
+                            <span class="fs-3 me-3">⚠️</span>
+                            <div>
+                                <h5 class="alert-heading fw-bold mb-1">Python Package Scan Limitation</h5>
+                                <p class="mb-0 text-dark small">Package vulnerability scanning is disabled for Python repositories. Code pattern scanning is active for Python source files, but no third-party dependency vulnerability checks are performed.</p>
+                            </div>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(Model.OsvWarningMessage))
+                    {
+                        <div class="alert cs-alert-warning border-0 shadow-sm p-4 mb-4 rounded-3 d-flex align-items-start" id="osv-warning-banner">
+                            <span class="fs-3 me-3">⚠️</span>
+                            <div>
+                                <h5 class="alert-heading fw-bold mb-1">Partial Scan Results</h5>
+                                <p class="mb-0 text-dark small">@Model.OsvWarningMessage</p>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Tabs Control -->
+                    <ul class="nav cs-nav-pills mb-4" id="scanTabs" role="tablist">
+                        <li class="nav-item" role="presentation" style="flex: 1;">
+                            <button class="nav-link w-100 active" id="packages-tab" data-bs-toggle="pill" data-bs-target="#packages-pane" type="button" role="tab" aria-controls="packages-pane" aria-selected="true">
+                                📦 Package Dependencies
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation" style="flex: 1;">
+                            <button class="nav-link w-100" id="files-tab" data-bs-toggle="pill" data-bs-target="#files-pane" type="button" role="tab" aria-controls="files-pane" aria-selected="false">
+                                📄 Repository File List
+                            </button>
+                        </li>
+                    </ul>
+
+                    <!-- Tabs Content -->
+                    <div class="tab-content" id="scanTabsContent">
+                        <!-- Packages Pane -->
+                        <div class="tab-pane fade show active" id="packages-pane" role="tabpanel" aria-labelledby="packages-tab">
+                            @if (Model.DetectedEcosystems != null && Model.DetectedEcosystems.Count > 0)
                             {
-                                <div class="invalid-feedback d-block mt-2">
-                                    @Model.ErrorMessage
+                                @foreach (var ecosystem in Model.DetectedEcosystems)
+                                {
+                                    var ecosystemName = ecosystem == CodeShield.Models.Ecosystem.Npm ? "npm" :
+                                                         ecosystem == CodeShield.Models.Ecosystem.NuGet ? "NuGet" : "Python";
+                                    var badgeColor = ecosystem == CodeShield.Models.Ecosystem.Npm ? "bg-warning text-dark" :
+                                                     ecosystem == CodeShield.Models.Ecosystem.NuGet ? "bg-primary text-white" : "bg-info text-dark";
+                                    var ecosystemPackages = Model.Packages?.Where(p => p.Ecosystem == ecosystem).ToList() ?? new List<CodeShield.Models.DependencyPackage>();
+
+                                    <div class="cs-card p-4 mb-4">
+                                        <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
+                                            <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                                                <span>@(ecosystem == CodeShield.Models.Ecosystem.Npm ? "🟢" : ecosystem == CodeShield.Models.Ecosystem.NuGet ? "🔵" : "🐍")</span> 
+                                                @ecosystemName Packages
+                                            </h5>
+                                            <span class="badge @badgeColor px-3 py-2 fw-semibold">@ecosystemPackages.Count packages</span>
+                                        </div>
+
+                                        @if (ecosystem == CodeShield.Models.Ecosystem.Python)
+                                        {
+                                            <div class="alert cs-alert-warning p-3 mb-0 rounded-3">
+                                                <p class="mb-0 small fw-medium">
+                                                    ⚠️ Package dependency vulnerability scans are currently disabled for Python.
+                                                </p>
+                                            </div>
+                                            @if (ecosystemPackages.Count == 0)
+                                            {
+                                                <div class="p-4 text-center text-muted small">
+                                                    No python dependency packages listed in requirements.txt
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="row g-2 mt-2">
+                                                    @foreach (var pkg in ecosystemPackages)
+                                                    {
+                                                        <div class="col-md-6 col-lg-4">
+                                                            <div class="p-2 border rounded-3 bg-light d-flex justify-content-between align-items-center">
+                                                                <span class="fw-semibold text-secondary small text-truncate" style="max-width: 120px;">@pkg.PackageName</span>
+                                                                <span class="badge bg-white text-dark border font-monospace small">@pkg.Version</span>
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            var vulnerablePackages = ecosystemPackages.Where(p => p.Vulnerabilities.Count > 0).ToList();
+                                            var vulnPackageCount = vulnerablePackages.Count;
+                                            var totalPackageCount = ecosystemPackages.Count;
+
+                                            <div class="p-3 rounded-3 mb-3 @(vulnPackageCount > 0 ? "cs-alert-danger" : "cs-alert-success")">
+                                                <p class="mb-0 small fw-semibold">
+                                                    @if (vulnPackageCount > 0)
+                                                    {
+                                                        <span>⚠️ Attention required: @vulnPackageCount of @totalPackageCount @ecosystemName dependencies have known security risks.</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span>✅ No package vulnerabilities found in @ecosystemName dependencies (@totalPackageCount checked).</span>
+                                                    }
+                                                </p>
+                                            </div>
+
+                                            @if (vulnPackageCount > 0)
+                                            {
+                                                <div class="d-flex flex-column gap-3">
+                                                    @foreach (var pkg in vulnerablePackages)
+                                                    {
+                                                        <div class="p-3 border rounded-3 bg-light">
+                                                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                                                <h6 class="fw-bold mb-0 text-dark small">
+                                                                    📦 @pkg.PackageName
+                                                                </h6>
+                                                                <span class="badge bg-white text-dark border font-monospace">Version: @pkg.Version</span>
+                                                            </div>
+                                                            
+                                                            <div class="d-flex flex-column gap-2">
+                                                                @foreach (var vuln in pkg.Vulnerabilities)
+                                                                {
+                                                                    var severityClass = vuln.Severity switch
+                                                                    {
+                                                                        CodeShield.Models.Severity.Critical => "grade-d",
+                                                                        CodeShield.Models.Severity.High => "grade-c",
+                                                                        CodeShield.Models.Severity.Medium => "bg-info text-dark",
+                                                                        _ => "bg-secondary text-white"
+                                                                    };
+                                                                    var borderClass = vuln.Severity switch
+                                                                    {
+                                                                        CodeShield.Models.Severity.Critical => "border-danger",
+                                                                        CodeShield.Models.Severity.High => "border-warning",
+                                                                        CodeShield.Models.Severity.Medium => "border-info",
+                                                                        _ => "border-secondary"
+                                                                    };
+                                                                    
+                                                                    <div class="p-3 bg-white rounded-3 border-start border-4 @borderClass shadow-sm">
+                                                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                                                            <span class="fw-bold font-monospace text-secondary small">@vuln.Id</span>
+                                                                            <span class="badge @severityClass px-2 py-1 font-monospace" style="font-size: 0.7rem; box-shadow: none;">@vuln.Severity</span>
+                                                                        </div>
+                                                                        <p class="mb-0 text-secondary small">@vuln.Description</p>
+                                                                    </div>
+                                                                }
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            }
+                                        }
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="cs-card p-5 text-center text-muted">
+                                    <span class="fs-1 d-block mb-3">📁</span>
+                                    <h5 class="fw-bold text-dark">No Supported Ecosystems Detected</h5>
+                                    <p class="small mb-0">This repository does not contain supported package files (e.g., package.json, *.csproj, requirements.txt).</p>
                                 </div>
                             }
                         </div>
 
-                        <div class="d-grid mt-4">
-                            <button type="submit" class="btn btn-primary btn-lg">Fetch Repository Files</button>
-                        </div>
-                    </form>
-                </div>
-            </div>            @if (Model.IsSubmitted && string.IsNullOrEmpty(Model.ErrorMessage))
-            {
-                @if (Model.DetectedEcosystems != null && Model.DetectedEcosystems.Contains(CodeShield.Models.Ecosystem.Python) && !Model.DetectedEcosystems.Contains(CodeShield.Models.Ecosystem.Npm) && !Model.DetectedEcosystems.Contains(CodeShield.Models.Ecosystem.NuGet))
-                {
-                    <div class="alert alert-warning border-0 shadow-sm p-4 mb-4 rounded-3 d-flex align-items-start" id="python-warning-banner">
-                        <span class="fs-3 me-3">⚠️</span>
-                        <div>
-                            <h5 class="alert-heading fw-bold mb-1">Python Package Scan Limitation</h5>
-                            <p class="mb-0 text-dark">Package vulnerability scanning is disabled for Python repositories. Code pattern scanning is still active for Python files, but no third-party package checks will be performed.</p>
-                        </div>
-                    </div>
-                }
-
-                @if (!string.IsNullOrEmpty(Model.OsvWarningMessage))
-                {
-                    <div class="alert alert-warning border-0 shadow-sm p-4 mb-4 rounded-3 d-flex align-items-start" id="osv-warning-banner">
-                        <span class="fs-3 me-3">⚠️</span>
-                        <div>
-                            <h5 class="alert-heading fw-bold mb-1">Partial Scan Results</h5>
-                            <p class="mb-0 text-dark">@Model.OsvWarningMessage</p>
-                        </div>
-                    </div>
-                }
-
-                @if (Model.DetectedEcosystems != null && Model.DetectedEcosystems.Count > 0)
-                {
-                    @foreach (var ecosystem in Model.DetectedEcosystems)
-                    {
-                        var ecosystemName = ecosystem == CodeShield.Models.Ecosystem.Npm ? "npm" :
-                                             ecosystem == CodeShield.Models.Ecosystem.NuGet ? "NuGet" : "Python";
-                        var badgeColor = ecosystem == CodeShield.Models.Ecosystem.Npm ? "bg-warning text-dark" :
-                                         ecosystem == CodeShield.Models.Ecosystem.NuGet ? "bg-primary" : "bg-info text-dark";
-                        var ecosystemPackages = Model.Packages?.Where(p => p.Ecosystem == ecosystem).ToList() ?? new List<CodeShield.Models.DependencyPackage>();
-
-                        <div class="card shadow border-0 rounded-3 mb-4">
-                            <div class="card-header bg-dark text-white py-3 d-flex justify-content-between align-items-center">
-                                <h5 class="card-title mb-0 fw-bold">
-                                    📦 @ecosystemName Packages
-                                </h5>
-                                <span class="badge @badgeColor">@ecosystemPackages.Count packages</span>
-                            </div>
-                            <div class="card-body p-0">
-                                @if (ecosystem == CodeShield.Models.Ecosystem.Python)
-                                {
-                                    <div class="p-4 border-bottom bg-light">
-                                        <p class="mb-0 fw-semibold text-warning">
-                                            ⚠️ Package vulnerability scanning is disabled for Python.
-                                        </p>
-                                    </div>
-                                    @if (ecosystemPackages.Count == 0)
-                                    {
-                                        <div class="p-4 text-center text-muted">
-                                            0 packages found in this repository
-                                        </div>
-                                    }
-                                    else
-                                    {
-                                        <ul class="list-group list-group-flush">
-                                            @foreach (var pkg in ecosystemPackages)
-                                            {
-                                                <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-4">
-                                                    <span class="fw-semibold text-secondary">@pkg.PackageName</span>
-                                                    <span class="badge bg-light text-dark border font-monospace px-3 py-2">@pkg.Version</span>
-                                                </li>
-                                            }
-                                        </ul>
-                                    }
-                                }
-                                else
-                                {
-                                    var vulnerablePackages = ecosystemPackages.Where(p => p.Vulnerabilities.Count > 0).ToList();
-                                    var vulnPackageCount = vulnerablePackages.Count;
-                                    var totalPackageCount = ecosystemPackages.Count;
-
-                                    <div class="p-4 border-bottom bg-light">
-                                        <p class="mb-0 fw-semibold">
-                                            @if (vulnPackageCount > 0)
-                                            {
-                                                <span class="text-danger">⚠️ @vulnPackageCount of @totalPackageCount @ecosystemName packages have known vulnerabilities.</span>
-                                            }
-                                            else
-                                            {
-                                                <span class="text-success">✅ No known vulnerabilities found in @ecosystemName packages (@totalPackageCount checked).</span>
-                                            }
-                                        </p>
+                        <!-- Files Pane -->
+                        <div class="tab-pane fade" id="files-pane" role="tabpanel" aria-labelledby="files-tab">
+                            @if (Model.Files != null)
+                            {
+                                <div class="cs-card p-4">
+                                    <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
+                                        <h5 class="fw-bold text-dark mb-0">Files Scanned</h5>
+                                        <span class="badge bg-light text-dark border px-3 py-2 fw-semibold">@Model.Files.Count files</span>
                                     </div>
 
-                                    @if (vulnPackageCount > 0)
-                                    {
-                                        <div class="list-group list-group-flush">
-                                            @foreach (var pkg in vulnerablePackages)
-                                            {
-                                                <div class="list-group-item p-4">
-                                                    <div class="mb-3">
-                                                        <h6 class="fw-bold mb-0 text-dark">
-                                                            📦 @pkg.PackageName <span class="badge bg-light text-dark border font-monospace ms-2">@pkg.Version</span>
-                                                        </h6>
-                                                    </div>
-                                                    <div class="row g-3">
-                                                        @foreach (var vuln in pkg.Vulnerabilities)
-                                                        {
-                                                            var severityBadgeClass = vuln.Severity switch
-                                                            {
-                                                                CodeShield.Models.Severity.Critical => "bg-danger",
-                                                                CodeShield.Models.Severity.High => "bg-warning text-dark",
-                                                                CodeShield.Models.Severity.Medium => "bg-info text-dark",
-                                                                CodeShield.Models.Severity.Low => "bg-secondary",
-                                                                _ => "bg-secondary"
-                                                            };
-                                                            var borderClass = vuln.Severity switch
-                                                            {
-                                                                CodeShield.Models.Severity.Critical => "border-danger",
-                                                                CodeShield.Models.Severity.High => "border-warning",
-                                                                CodeShield.Models.Severity.Medium => "border-info",
-                                                                _ => "border-secondary"
-                                                            };
-                                                            <div class="col-12">
-                                                                <div class="p-3 bg-light rounded-3 border-start border-4 @borderClass">
-                                                                    <div class="d-flex justify-content-between align-items-center mb-1">
-                                                                        <span class="fw-bold font-monospace text-secondary">@vuln.Id</span>
-                                                                        <span class="badge @severityBadgeClass">@vuln.Severity</span>
-                                                                    </div>
-                                                                    <p class="mb-0 text-muted small">@vuln.Description</p>
-                                                                </div>
-                                                            </div>
-                                                        }
-                                                    </div>
-                                                </div>
-                                            }
-                                        </div>
-                                    }
-                                }
-                            </div>
-                        </div>
-                    }
-                }           }
-
-                @if (Model.Files != null)
-                {
-                    <div class="card shadow border-0 rounded-3 mb-4">
-                        <div class="card-header bg-success text-white py-3">
-                            <h5 class="card-title mb-0 d-flex justify-content-between align-items-center">
-                                <span>Repository Files Found</span>
-                                <span class="badge bg-white text-success">@Model.Files.Count files</span>
-                            </h5>
-                        </div>
-                        <div class="card-body p-0">
-                            <div style="max-height: 250px; overflow-y: auto;">
-                                @if (Model.Files.Count == 0)
-                                {
-                                    <div class="p-4 text-center text-muted">
-                                        No files found in this repository.
-                                    </div>
-                                }
-                                else
-                                {
-                                    <ul class="list-group list-group-flush">
-                                        @foreach (var file in Model.Files)
+                                    <div style="max-height: 400px; overflow-y: auto;" class="rounded-3 border">
+                                        @if (Model.Files.Count == 0)
                                         {
-                                            <li class="list-group-item font-monospace small">
-                                                📄 @file
-                                            </li>
+                                            <div class="p-4 text-center text-muted small">
+                                                No files checked in this repository.
+                                            </div>
                                         }
-                                    </ul>
-                                }
-                            </div>
+                                        else
+                                        {
+                                            <div class="list-group list-group-flush">
+                                                @foreach (var file in Model.Files)
+                                                {
+                                                    <div class="list-group-item font-monospace small px-3 py-2 text-secondary d-flex align-items-center gap-2">
+                                                        <span>📄</span> @file
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
                         </div>
                     </div>
-                }
+                </div>
             }
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        document.getElementById('scan-form').addEventListener('submit', function() {
+            document.getElementById('scan-loader').classList.remove('d-none');
+            document.getElementById('scan-form-card').classList.add('d-none');
+            var results = document.getElementById('scan-results-container');
+            if (results) {
+                results.classList.add('d-none');
+            }
+        });
+    </script>
+}
