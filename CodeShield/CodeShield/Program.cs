@@ -9,6 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 builder.Services.AddHttpClient<IGitHubService, GitHubService>();
 builder.Services.AddHttpClient<IOsvService, OsvService>();
+builder.Services.AddHttpClient<IAiExplanationService, AiExplanationService>();
 
 
 // Register ApplicationDbContext

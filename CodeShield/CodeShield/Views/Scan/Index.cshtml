@@ -194,7 +194,34 @@
                                                                             <span class="fw-bold font-monospace text-secondary small">@vuln.Id</span>
                                                                             <span class="badge @severityClass px-2 py-1 font-monospace" style="font-size: 0.7rem; box-shadow: none;">@vuln.Severity</span>
                                                                         </div>
-                                                                        <p class="mb-0 text-secondary small">@vuln.Description</p>
+                                                                        <p class="mb-2 text-secondary small">@vuln.Description</p>
+                                                                        
+                                                                        <!-- AI Explanation and Fix Suggestion -->
+                                                                        @if (!string.IsNullOrEmpty(vuln.AiExplanation) || !string.IsNullOrEmpty(vuln.AiFixSuggestion))
+                                                                        {
+                                                                            <div class="mt-3 pt-3 border-top">
+                                                                                @if (!string.IsNullOrEmpty(vuln.AiExplanation))
+                                                                                {
+                                                                                    <div class="mb-2 bg-light p-2 rounded-2 border-start border-3 border-info">
+                                                                                        <span class="d-block fw-bold text-dark mb-1" style="font-size: 0.8rem;">🤖 AI Explanation</span>
+                                                                                        <p class="mb-0 text-muted small">@vuln.AiExplanation</p>
+                                                                                    </div>
+                                                                                }
+                                                                                @if (!string.IsNullOrEmpty(vuln.AiFixSuggestion))
+                                                                                {
+                                                                                    <div class="bg-light p-2 rounded-2 border-start border-3 border-success">
+                                                                                        <span class="d-block fw-bold text-dark mb-1" style="font-size: 0.8rem;">💡 Suggested Fix</span>
+                                                                                        <p class="mb-0 text-muted small">@vuln.AiFixSuggestion</p>
+                                                                                    </div>
+                                                                                }
+                                                                            </div>
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            <div class="mt-3 pt-2 border-top text-muted small d-flex align-items-center gap-1">
+                                                                                <span>🤖</span> <em>AI explanation unavailable for this issue.</em>
+                                                                            </div>
+                                                                        }
                                                                     </div>
                                                                 }
                                                             </div>
