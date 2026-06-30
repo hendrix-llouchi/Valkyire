@@ -1,57 +1,111 @@
 # 🛡️ CodeShield
 
-A modular, web-based security scanner built with **ASP.NET Core (.NET 10)** that analyzes public GitHub repositories for package vulnerabilities and insecure code patterns. It retrieves dependency information, queries the **OSV.dev API** for known vulnerabilities, scans code for risks using safe, simple regular expression matches, and utilizes **AI-powered analysis** to explain risks and suggest remediation steps in plain English.
+> A modular, web-based security scanner that analyzes **public GitHub repositories** for vulnerable packages and insecure code patterns — with plain-English AI explanations and fix suggestions.
+
+Built with **ASP.NET Core (.NET 10)**, Razor Views, and Entity Framework Core.
 
 ---
 
 ## 🚀 Key Features
 
-*   **Repository Intake & Analysis**:
-    *   Validates public GitHub repository URLs.
-    *   Queries the GitHub REST API (mitigating rate-limiting with secure API tokens) to recursively retrieve repository file trees up to a **1000-file threshold**.
-*   **Dependency Vulnerability Scanning**:
-    *   Full support for **npm** (`package.json`) and **NuGet** (`.csproj`) dependency parsing.
-    *   Queries the free, public **OSV.dev API** in batches to check package versions for known security vulnerabilities.
-    *   Gracefully handles partial API failures, showing available results with helpful warnings.
-*   **Code Pattern Security Scanning**:
-    *   Scans code files (C#, JavaScript, Python) for insecure code patterns using safe, simplified regular expression matching (e.g., Raw SQL injection strings, exposed secrets, configurations, insecure HTTP).
-    *   *Python Support*: Runs code pattern scanning when a `requirements.txt` is found. Prominently displays a warning banner stating package vulnerability lookup is not available for Python.
-*   **AI-Generated Explanations & Fix Suggestions**:
-    *   Uses AI endpoints via **AgentRouter** (Anthropic-compatible endpoint) to explain security issues in plain, accessible language and provide suggestions for fixes.
-*   **User Accounts & Dashboard**:
-    *   Secure user registration and authentication powered by **ASP.NET Core Identity**.
-    *   Brute-force protection: Accounts are locked for 5 minutes after 5 failed login attempts.
-    *   Provides a clean dashboard displaying scan histories, security grades, and detailed reports.
+### 🔍 Repository Intake
+- Validates public GitHub repository URLs before any scanning begins.
+- Queries the **GitHub REST API** to recursively fetch the repository's file tree.
+- Enforces a **1,000-file threshold** to avoid scanning extremely large repositories.
+- Detects supported ecosystems (`package.json`, `.csproj`, `requirements.txt`) and fails fast with a clear message if none are found.
+
+### 📦 Dependency Vulnerability Scanning
+- Full support for **npm** (`package.json`) and **NuGet** (`.csproj`) dependency parsing.
+- Queries the free, public **OSV.dev API** in batches to check installed package versions against known CVEs.
+- Handles partial API failures gracefully — shows results that succeeded with a warning note for any that couldn't be checked.
+
+### 🐍 Python (Partial Support)
+- When only `requirements.txt` is detected, the code pattern scanner still runs.
+- A **prominent banner** is shown on the results page making it clear that package vulnerability scanning is not available for Python — this is a valid, successful scan outcome.
+
+### 🧩 Code Pattern Scanning
+- Scans C#, JavaScript, and Python source files using conservative **regular expression** patterns.
+- Detects four issue types:
+  | Issue Type | Description |
+  |---|---|
+  | `HardcodedSecret` | Secrets or API keys embedded in source files |
+  | `SqlInjectionRisk` | Raw string concatenation passed directly into SQL keywords |
+  | `ExposedConfig` | Sensitive configuration values left in code |
+  | `InsecureHttp` | Plain HTTP URLs used where HTTPS is expected |
+- Favors **low false-positive** patterns over exhaustive coverage — deliberately conservative by design.
+
+### 🤖 AI-Powered Explanations
+- Each detected vulnerability or code issue is sent to an **AgentRouter** (Anthropic-compatible) AI endpoint.
+- Returns a plain-English explanation of the risk and a concrete fix suggestion.
+- If the AI call times out or fails for some issues, the scan still completes — those items are shown without AI annotations rather than failing the entire scan.
+
+### 👤 User Accounts & Dashboard
+- Registration and login powered by **ASP.NET Core Identity**.
+- Accounts are **locked for 5 minutes** after 5 consecutive failed login attempts. Login errors use a generic message to avoid revealing whether an email address is registered.
+- Dashboard displays full scan history with security grades, ecosystem breakdowns, and issue counts.
+- Detailed per-scan results page groups findings by ecosystem (for monorepos) and by issue type.
+
+### 🏆 Security Grading
+- Each completed scan receives an overall **security grade** (A–F) based on the number and severity of issues found.
+- Zero issues found is a valid, positive result — graded A with a "No issues found" state, never treated as an error.
 
 ---
 
 ## 🛠️ Technology Stack
 
-*   **Backend Framework**: ASP.NET Core (.NET 10)
-*   **Frontend**: Razor Pages/Views + Bootstrap 5 (Responsive Layouts, Sleek UI Elements)
-*   **Database & ORM**: MS SQL Server LocalDB (Development) / SQL Server (Production) via **Entity Framework Core (Code-First)**
-*   **Authentication**: Cookie-based authentication using **ASP.NET Core Identity**
-*   **External Integrations**:
-    *   **GitHub REST API** (Repo structure and content retrieval)
-    *   **OSV.dev API** (Public database vulnerability lookup)
-    *   **AgentRouter API** (Anthropic-compatible AI endpoint for text remediation suggestions)
+| Layer | Technology |
+|---|---|
+| **Framework** | ASP.NET Core (.NET 10) |
+| **Frontend** | Razor Views + Bootstrap 5 |
+| **Database** | SQL Server LocalDB (dev) / SQL Server (prod) |
+| **ORM** | Entity Framework Core 10 (Code-First) |
+| **Auth** | ASP.NET Core Identity (cookie-based sessions) |
+| **GitHub API** | GitHub REST API v3 |
+| **Vulnerability DB** | OSV.dev API (free, public, no key required) |
+| **AI Explanations** | AgentRouter (Anthropic-compatible endpoint) |
+
+### NuGet Packages
+
+| Package | Version |
+|---|---|
+| `Microsoft.AspNetCore.Identity.EntityFrameworkCore` | 10.0.9 |
+| `Microsoft.EntityFrameworkCore.SqlServer` | 10.0.9 |
+| `Microsoft.EntityFrameworkCore.Design` | 10.0.9 |
 
 ---
 
-## 🔒 Scope Boundaries
+## 📂 Project Structure
 
-To align with the project design guidelines, CodeShield strictly maintains the following scope:
-1.  **Limited Ecosystems**: Supports `npm` and `NuGet` fully, and `Python` partially (code scanning only, no package vulnerability checks). Other packaging formats (Maven, PyPI API lookup, etc.) are out of scope.
-2.  **No Automated Code Modifying**: AI suggestions are presented in the text/UI only. CodeShield will never commit changes or open Pull Requests on your scanned repository.
-3.  **Public Repositories Only**: Accesses public repositories via basic file retrieval APIs. No OAuth flows or private repository credentials are required or supported.
-4.  **On-Demand Scans Only**: Scans are initiated manually by users. No background workers, webhooks, or scheduled cron scanning tasks are supported.
-5.  **Single User Role**: Accessible only to standard authenticated users (no administrative dashboards or multi-role permission hierarchies).
+```
+CodeShield/
+└── CodeShield/
+    ├── Controllers/
+    │   ├── AccountController.cs      # Register, Login, Logout
+    │   ├── DashboardController.cs    # Scan history overview
+    │   ├── HomeController.cs         # Landing page
+    │   └── ScanController.cs         # Scan orchestration & results
+    ├── Services/
+    │   ├── GitHubService.cs          # GitHub REST API integration
+    │   ├── OsvService.cs             # OSV.dev vulnerability lookup
+    │   ├── CodePatternScanner.cs     # Regex-based code scanning
+    │   └── AiExplanationService.cs   # AgentRouter AI explanations
+    ├── Models/
+    │   ├── ScanResult.cs             # Core scan entity
+    │   ├── VulnerablePackage.cs      # Package vulnerability entity
+    │   └── CodeIssue.cs              # Code pattern issue entity
+    ├── Views/
+    │   ├── Account/                  # Login & Register pages
+    │   ├── Dashboard/                # Scan history
+    │   ├── Home/                     # Landing page
+    │   └── Scan/                     # Scan form & results
+    ├── Data/
+    │   └── ApplicationDbContext.cs   # EF Core DbContext
+    └── Migrations/                   # EF Core migration history
+```
 
 ---
 
-## 📂 Database Schema
-
-CodeShield utilizes a lightweight relational database schema mapped with Entity Framework Core:
+## 🗄️ Database Schema
 
 ```mermaid
 erDiagram
@@ -68,17 +122,17 @@ erDiagram
         string SecurityGrade
         int TotalIssuesFound
         DateTime ScannedAt
-        int Status "Completed/PartialFailure/Failed"
+        ScanStatus Status "Completed / PartialFailure / Failed"
     }
 
     VulnerablePackages {
         int Id PK
         int ScanResultId FK
         string PackageName
-        int Ecosystem "npm/NuGet/Python"
+        Ecosystem Ecosystem "npm / NuGet / Python"
         string InstalledVersion
         string SafeVersion
-        int Severity "Critical/High/Medium/Low"
+        Severity Severity "Critical / High / Medium / Low"
         string Description
         string AiExplanation
         string AiFixSuggestion
@@ -89,9 +143,9 @@ erDiagram
         int ScanResultId FK
         string FileName
         int LineNumber
-        int IssueType "HardcodedSecret/SqlInjectionRisk/ExposedConfig/InsecureHttp"
+        IssueType IssueType "HardcodedSecret / SqlInjectionRisk / ExposedConfig / InsecureHttp"
         string CodeSnippet
-        int Severity "Critical/High/Medium/Low"
+        Severity Severity "Critical / High / Medium / Low"
         string AiExplanation
         string AiFixSuggestion
     }
@@ -99,56 +153,76 @@ erDiagram
 
 ---
 
+## 🔒 Scope Boundaries
+
+CodeShield is deliberately scoped. The following are **not** supported and will not be added without an explicit design decision:
+
+| Boundary | Detail |
+|---|---|
+| **Ecosystems** | Only `npm`, `NuGet` (full), and `Python` (code scan only). No Maven, Go, Ruby, PHP, etc. |
+| **No auto-fix** | AI suggestions are text only. CodeShield will never commit code or open Pull Requests. |
+| **Public repos only** | No OAuth flows, no private repository credentials. |
+| **On-demand only** | No background workers, webhooks, or scheduled scans. |
+| **Single role** | No admin dashboard or multi-role permission system. |
+| **No pagination** | Issue and history lists are small — pagination is not implemented at this stage. |
+
+---
+
 ## ⚙️ Setup & Installation
 
 ### Prerequisites
-*   [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
-*   [MS SQL Server Express / LocalDB](https://learn.microsoft.com/en-us/sql/database-engine/configure-windows/sql-server-express-localdb)
+- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
+- [SQL Server Express / LocalDB](https://learn.microsoft.com/en-us/sql/database-engine/configure-windows/sql-server-express-localdb)
 
-### 1. Clone & Navigate to Project
+### 1. Clone the Repository
 ```bash
 git clone <repository-url>
-cd CodeShield/CodeShield
+cd "c# project/CodeShield/CodeShield"
 ```
 
 ### 2. Configure User Secrets
-Do not commit sensitive API keys to the repository. Configure local credentials using the .NET Secret Manager:
+
+Never commit API keys or connection strings. Use the .NET Secret Manager for local development:
 
 ```bash
-# Initialize User Secrets
+# Initialize User Secrets (only needed once)
 dotnet user-secrets init
 
-# Add Connection String for LocalDB
-dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=(localdb)\mssqllocaldb;Database=CodeShieldDb;Trusted_Connection=True;MultipleActiveResultSets=true"
+# SQL Server LocalDB connection string
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" \
+  "Server=(localdb)\mssqllocaldb;Database=CodeShieldDb;Trusted_Connection=True;MultipleActiveResultSets=true"
 
-# Add GitHub Personal Access Token (to avoid rate limits on repo scan)
-dotnet user-secrets set "GitHub:Token" "your_github_token"
+# GitHub Personal Access Token (avoids anonymous rate limits)
+dotnet user-secrets set "GitHub:Token" "your_github_pat_here"
 
-# Add AgentRouter AI API Key
-dotnet user-secrets set "AiService:ApiKey" "your_agent_router_api_key"
+# AgentRouter AI API Key
+dotnet user-secrets set "AiService:ApiKey" "your_agentrouter_api_key_here"
 ```
 
-### 3. Database Migration & Initialization
-Apply Entity Framework migrations to set up the SQL Server database:
+> [!IMPORTANT]
+> The GitHub token is used to increase the API rate limit from 60 to 5,000 requests/hour. It requires no special scopes for public repository access.
 
+### 3. Apply Database Migrations
 ```bash
 dotnet ef database update
 ```
 
 ### 4. Run the Application
-Start the development server:
-
 ```bash
 dotnet run
 ```
-The application will be accessible at: `https://localhost:7147` or `http://localhost:5213` (check terminal output for exact ports).
+
+The app will be available at `https://localhost:7147` or `http://localhost:5213` — check the terminal output for the exact ports.
 
 ---
 
 ## 🧪 Running Tests
-
-To run the unit/integration tests:
-
 ```bash
 dotnet test
 ```
+
+---
+
+## 📜 License
+
+This project is licensed under the terms of the [MIT License](LICENSE).

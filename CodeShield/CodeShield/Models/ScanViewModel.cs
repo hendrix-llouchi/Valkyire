@@ -9,6 +9,7 @@ namespace CodeShield.Models
         public List<string>? Files { get; set; }
         public List<DependencyPackage>? Packages { get; set; }
         public List<Ecosystem>? DetectedEcosystems { get; set; }
+        public List<CodeIssue>? CodeIssues { get; set; }
         public bool IsSubmitted { get; set; }
         public string? OsvWarningMessage { get; set; }
     }

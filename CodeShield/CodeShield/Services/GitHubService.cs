@@ -327,6 +327,51 @@ namespace CodeShield.Services
             }
         }
 
+        public async Task<string?> GetFileContentAsync(string repositoryUrl, string path)
+        {
+            if (string.IsNullOrWhiteSpace(repositoryUrl) || string.IsNullOrWhiteSpace(path))
+            {
+                return null;
+            }
+
+            var regex = new Regex(@"^https?://(www\.)?github\.com/(?<owner>[^/]+)/(?<repo>[^/]+?)(?:\.git)?/?$", RegexOptions.IgnoreCase);
+            var match = regex.Match(repositoryUrl.Trim());
+
+            if (!match.Success)
+            {
+                return null;
+            }
+
+            string owner = match.Groups["owner"].Value;
+            string repo = match.Groups["repo"].Value;
+
+            try
+            {
+                string contentUrl = $"https://api.github.com/repos/{owner}/{repo}/contents/{Uri.EscapeDataString(path)}";
+                var (contentResponse, contentError) = await SendWithRateLimitCheckAsync(contentUrl);
+                if (contentError != null || contentResponse == null)
+                {
+                    return null;
+                }
+
+                var contentJson = await contentResponse.Content.ReadAsStringAsync();
+                using var contentDoc = JsonDocument.Parse(contentJson);
+                if (contentDoc.RootElement.TryGetProperty("content", out var contentProp))
+                {
+                    var base64Content = contentProp.GetString() ?? string.Empty;
+                    base64Content = base64Content.Replace("\n", "").Replace("\r", "").Trim();
+                    var fileBytes = Convert.FromBase64String(base64Content);
+                    return Encoding.UTF8.GetString(fileBytes).TrimStart('\uFEFF');
+                }
+            }
+            catch
+            {
+                // Ignore and return null on failure
+            }
+
+            return null;
+        }
+
         private async Task<(HttpResponseMessage? Response, string? ErrorMessage)> SendWithRateLimitCheckAsync(string url)
         {
             try
