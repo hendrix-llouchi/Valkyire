@@ -6,7 +6,7 @@ on:
       - main
 
 env:
-  AZURE_WEBAPP_NAME: 'codeshield-a8g8fhfna3fhcmaw' # Update this with your actual Azure Web App name
+  AZURE_WEBAPP_NAME: 'codeshield' # Update this with your actual Azure Web App name
   DOTNET_VERSION: '10.0.x'        # Target .NET SDK version
 
 jobs:
