@@ -1,0 +1,38 @@
+name: Build and Deploy to Azure Web App
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  AZURE_WEBAPP_NAME: 'codeshield' # Update this with your actual Azure Web App name
+  DOTNET_VERSION: '10.0.x'        # Target .NET SDK version
+
+jobs:
+  build-and-deploy:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET Core SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: dotnet restore
+        run: dotnet restore CodeShield/CodeShield/CodeShield.csproj
+
+      - name: dotnet build
+        run: dotnet build CodeShield/CodeShield/CodeShield.csproj --configuration Release
+
+      - name: dotnet publish
+        run: dotnet publish CodeShield/CodeShield/CodeShield.csproj --configuration Release --output ${{runner.temp}}/publish
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: ${{runner.temp}}/publish
