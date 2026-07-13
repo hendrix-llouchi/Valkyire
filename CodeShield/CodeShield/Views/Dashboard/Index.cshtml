@@ -2,16 +2,12 @@
     ViewData["Title"] = "Dashboard";
 }
 
-@{
-    ViewData["Title"] = "Dashboard";
-}
-
 <div class="container py-4">
     <!-- Welcome Header -->
     <div class="d-flex justify-content-between align-items-center mb-5">
         <div>
             <h1 class="h3 fw-bold text-dark mb-1">Security Control Center</h1>
-            <p class="text-muted small mb-0">Welcome back, @User.Identity?.Name. Overview of your repository security status.</p>
+            <p class="text-muted small mb-0">Welcome back, @(User.Identity?.Name). Overview of your repository security status.</p>
         </div>
         <div>
             <a asp-controller="Scan" asp-action="Index" class="cs-btn cs-btn-primary text-white text-decoration-none d-flex align-items-center gap-2">
