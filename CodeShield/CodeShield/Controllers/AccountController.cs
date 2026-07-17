@@ -37,15 +37,15 @@ namespace CodeShield.Controllers
         {
             if (ModelState.IsValid)
             {
-                // Ensure email isn't already taken
-                var existingUser = await _userManager.FindByEmailAsync(model.Email);
+                // Ensure username isn't already taken
+                var existingUser = await _userManager.FindByNameAsync(model.Username);
                 if (existingUser != null)
                 {
-                    ModelState.AddModelError("Email", "An account with this email already exists. Try logging in instead.");
+                    ModelState.AddModelError("Username", "An account with this username already exists. Try logging in instead.");
                     return View(model);
                 }
 
-                var user = new IdentityUser { UserName = model.Email, Email = model.Email };
+                var user = new IdentityUser { UserName = model.Username };
                 var result = await _userManager.CreateAsync(user, model.Password);
 
                 if (result.Succeeded)
@@ -86,7 +86,7 @@ namespace CodeShield.Controllers
             if (ModelState.IsValid)
             {
                 // Attempt to sign in
-                var result = await _signInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberMe, lockoutOnFailure: true);
+                var result = await _signInManager.PasswordSignInAsync(model.Username, model.Password, model.RememberMe, lockoutOnFailure: true);
 
                 if (result.Succeeded)
                 {
@@ -103,7 +103,7 @@ namespace CodeShield.Controllers
                 }
                 else
                 {
-                    ModelState.AddModelError(string.Empty, "Invalid email or password.");
+                    ModelState.AddModelError(string.Empty, "Invalid username or password.");
                 }
             }
             return View(model);

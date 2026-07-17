@@ -81,15 +81,15 @@ using (var scope = app.Services.CreateScope())
         dbContext.Database.Migrate();
 
         var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
-        var defaultEmail = "admin@codeshield.com";
-        var defaultUser = userManager.FindByEmailAsync(defaultEmail).Result;
+        var defaultUsername = "admin";
+        var defaultUser = userManager.FindByNameAsync(defaultUsername).Result;
         if (defaultUser == null)
         {
-            var user = new IdentityUser { UserName = defaultEmail, Email = defaultEmail, EmailConfirmed = true };
+            var user = new IdentityUser { UserName = defaultUsername, EmailConfirmed = true };
             var result = userManager.CreateAsync(user, "Admin123!").Result;
             if (result.Succeeded)
             {
-                Console.WriteLine("Successfully seeded default user: admin@codeshield.com / Admin123!");
+                Console.WriteLine("Successfully seeded default user: admin / Admin123!");
             }
             else
             {

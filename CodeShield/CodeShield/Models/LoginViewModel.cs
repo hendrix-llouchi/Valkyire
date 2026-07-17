@@ -4,10 +4,9 @@ namespace CodeShield.Models
 {
     public class LoginViewModel
     {
-        [Required(ErrorMessage = "Email is required.")]
-        [EmailAddress(ErrorMessage = "Invalid email address.")]
-        [Display(Name = "Email")]
-        public string Email { get; set; } = string.Empty;
+        [Required(ErrorMessage = "Username is required.")]
+        [Display(Name = "Username")]
+        public string Username { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Password is required.")]
         [DataType(DataType.Password)]
