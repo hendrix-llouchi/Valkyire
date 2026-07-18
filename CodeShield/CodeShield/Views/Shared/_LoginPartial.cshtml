@@ -2,25 +2,26 @@
 @inject SignInManager<IdentityUser> SignInManager
 @inject UserManager<IdentityUser> UserManager
 
-<ul class="navbar-nav align-items-center">
+<ul class="navbar-nav align-items-md-center gap-2 gap-md-0">
 @if (SignInManager.IsSignedIn(User))
 {
     <li class="nav-item">
-        <a class="nav-link text-secondary fw-semibold px-3" asp-controller="Dashboard" asp-action="Index" title="Dashboard">👋 Hello, @User.Identity?.Name!</a>
+        <a class="nav-link nb-nav-link px-3 fw-bold" asp-controller="Dashboard" asp-action="Index" title="Dashboard">👋 @User.Identity?.Name</a>
     </li>
+    <span class="nb-nav-divider d-none d-md-inline">|</span>
     <li class="nav-item">
         <form class="form-inline d-inline" asp-controller="Account" asp-action="Logout" method="post">
-            <button type="submit" class="nav-link btn btn-link text-secondary fw-medium border-0 bg-transparent py-2 px-3 text-decoration-none">Logout</button>
+            <button type="submit" class="nav-link nb-nav-link btn btn-link border-0 bg-transparent py-2 px-3 text-decoration-none" style="box-shadow: none !important; transform: none !important;">Logout</button>
         </form>
     </li>
 }
 else
 {
     <li class="nav-item">
-        <a class="nav-link text-secondary fw-medium px-3" asp-controller="Account" asp-action="Register">Register</a>
+        <a class="nav-link nb-nav-link px-3" asp-controller="Account" asp-action="Register">Register</a>
     </li>
-    <li class="nav-item">
-        <a class="nav-link btn cs-btn-primary py-2 px-4 ms-2 text-white" asp-controller="Account" asp-action="Login">Login</a>
+    <li class="nav-item ms-md-2">
+        <a class="nb-btn nb-btn-primary py-2 px-3 fs-6" asp-controller="Account" asp-action="Login">Login</a>
     </li>
 }
 </ul>

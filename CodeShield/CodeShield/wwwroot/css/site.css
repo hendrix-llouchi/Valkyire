@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;700;800&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap');
 
 :root {
     --bg-primary: #f8fafc;
@@ -30,6 +30,45 @@
     --info-border: #bae6fd;
     --info-text: #075985;
     --info-color: #0ea5e9;
+
+    /* Neo-Brutalist Design Tokens */
+    --color-black: #0d0d0d;
+    --color-white: #ffffff;
+    --color-bg-light: #f4f4f5;
+    --color-orange-primary: #ff4500;
+    
+    /* Rookie (Green Theme) */
+    --rookie-border: #00c180;
+    --rookie-shadow: #00c180;
+    --rookie-bg-tint: #e8f7f2;
+    --rookie-text: #007c52;
+
+    /* Adventurer (Yellow/Orange Theme) */
+    --adventurer-border: #ffae34;
+    --adventurer-shadow: #ffae34;
+    --adventurer-bg-tint: #fffaf0;
+    --adventurer-text: #b45309;
+
+    /* Master (Purple Theme) */
+    --master-border: #8a5cf5;
+    --master-shadow: #8a5cf5;
+    --master-bg-tint: #f6f1ff;
+    --master-text: #5b21b6;
+
+    /* Typical Journey (Red Theme) */
+    --typical-border: #ef4444;
+    --typical-shadow: #ef4444;
+    --typical-bg-tint: #fef2f2;
+    --typical-text: #b91c1c;
+
+    /* Foundry Experience (Green Theme variant) */
+    --foundry-border: #10b981;
+    --foundry-shadow: #10b981;
+    --foundry-bg-tint: #ecfdf5;
+    --foundry-text: #047857;
+
+    /* Global Neo-Brutalist Shadow settings */
+    --brutalist-shadow-offset: 4px;
 }
 
 html, body {
@@ -364,4 +403,311 @@ body {
     object-fit: contain;
     border-radius: 14px;
     box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+
+/* ==========================================
+   NEO-BRUTALIST REDESIGN COMPONENTS
+   ========================================== */
+
+/* Typography Classes */
+.nb-heading {
+    font-family: 'Space Grotesk', sans-serif !important;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+    color: var(--color-black);
+}
+
+.nb-mono {
+    font-family: 'Space Mono', monospace !important;
+}
+
+/* Neo-Brutalist Buttons */
+.nb-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px 28px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 800;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    border: 3px solid var(--color-black) !important;
+    box-shadow: var(--brutalist-shadow-offset) var(--brutalist-shadow-offset) 0px var(--color-black) !important;
+    transition: all 0.1s ease;
+    position: relative;
+    border-radius: 0px !important;
+    text-decoration: none !important;
+}
+
+.nb-btn-primary {
+    background-color: var(--color-orange-primary) !important;
+    color: var(--color-white) !important;
+}
+
+.nb-btn-secondary {
+    background-color: var(--color-white) !important;
+    color: var(--color-black) !important;
+}
+
+/* Interaction: Pressing/Hover Effect */
+.nb-btn:hover {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px var(--color-black) !important;
+}
+
+.nb-btn:active {
+    transform: translate(4px, 4px);
+    box-shadow: 0px 0px 0px var(--color-black) !important;
+}
+
+/* Navbar container and links styling */
+.nb-navbar-container {
+    background-color: var(--color-white) !important;
+    border: 3px solid var(--color-black) !important;
+    box-shadow: var(--brutalist-shadow-offset) var(--brutalist-shadow-offset) 0px var(--color-black) !important;
+    padding: 12px 24px;
+    border-radius: 0px !important;
+    transition: all 0.1s ease;
+}
+
+.nb-brand-text {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 800;
+    font-size: 1.4rem;
+    letter-spacing: 0.05em;
+    color: var(--color-black) !important;
+    text-transform: uppercase;
+}
+
+.nb-nav-link {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    letter-spacing: 0.05em;
+    color: var(--color-black) !important;
+    text-transform: uppercase;
+    transition: transform 0.1s ease;
+}
+
+.nb-nav-link:hover {
+    transform: translateY(-2px);
+}
+
+.nb-nav-divider {
+    color: var(--color-orange-primary);
+    font-weight: 700;
+    align-self: center;
+}
+
+/* Neo-Brutalist Badges */
+.nb-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background-color: var(--color-orange-primary);
+    color: var(--color-white);
+    border: 2px solid var(--color-black) !important;
+    box-shadow: 2px 2px 0px var(--color-black);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 6px 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-radius: 0px !important;
+}
+
+.nb-badge-light {
+    background-color: var(--color-white);
+    color: var(--color-black);
+}
+
+/* Feature & Layout Cards */
+.nb-card {
+    background-color: var(--color-white);
+    border: 3px solid var(--theme-border, var(--color-black)) !important;
+    box-shadow: var(--brutalist-shadow-offset) var(--brutalist-shadow-offset) 0px var(--theme-shadow, var(--color-black)) !important;
+    border-radius: 0px !important;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.nb-card-hover:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0px var(--theme-shadow, var(--color-black)) !important;
+}
+
+.nb-card-header {
+    padding: 24px;
+    text-align: center;
+    border-bottom: 2px solid var(--theme-border, var(--color-black));
+}
+
+.nb-card-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--theme-text-accent, var(--color-black));
+    margin-bottom: 4px;
+    text-transform: uppercase;
+}
+
+.nb-card-subtitle {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--color-black);
+    text-transform: uppercase;
+}
+
+.nb-quote-box {
+    background-color: var(--theme-bg-tint, var(--color-bg-light));
+    padding: 16px;
+    font-family: 'Space Mono', monospace;
+    font-style: italic;
+    font-size: 0.875rem;
+    border-bottom: 2px solid var(--theme-border, var(--color-black));
+    color: var(--color-black);
+}
+
+.nb-card-body {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    flex-grow: 1;
+}
+
+.nb-meta-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+}
+
+.nb-section-desc, .nb-goal-text {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--color-black);
+}
+
+.nb-goal-text {
+    color: var(--theme-text-accent, var(--color-black));
+}
+
+.nb-card-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.nb-card-list li {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.85rem;
+    position: relative;
+    padding-left: 20px;
+    color: var(--color-black);
+}
+
+.nb-card-list li::before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    color: var(--theme-text-accent, var(--color-black));
+    font-weight: bold;
+}
+
+/* Monorepo/Ecosystem Theme Accents */
+.rookie-theme {
+    --theme-border: var(--rookie-border);
+    --theme-shadow: var(--rookie-shadow);
+    --theme-bg-tint: var(--rookie-bg-tint);
+    --theme-text-accent: var(--rookie-text);
+}
+
+.adventurer-theme {
+    --theme-border: var(--adventurer-border);
+    --theme-shadow: var(--adventurer-shadow);
+    --theme-bg-tint: var(--adventurer-bg-tint);
+    --theme-text-accent: var(--adventurer-text);
+}
+
+.master-theme {
+    --theme-border: var(--master-border);
+    --theme-shadow: var(--master-shadow);
+    --theme-bg-tint: var(--master-bg-tint);
+    --theme-text-accent: var(--master-text);
+}
+
+.typical-theme {
+    --theme-border: var(--typical-border);
+    --theme-shadow: var(--typical-shadow);
+    --theme-bg-tint: var(--typical-bg-tint);
+    --theme-text-accent: var(--typical-text);
+}
+
+.foundry-theme {
+    --theme-border: var(--foundry-border);
+    --theme-shadow: var(--foundry-shadow);
+    --theme-bg-tint: var(--foundry-bg-tint);
+    --theme-text-accent: var(--foundry-text);
+}
+
+/* Horizontal Brutalist Rule */
+.nb-hr {
+    height: 3px;
+    background-color: var(--color-black);
+    border: none;
+    margin: 40px 0;
+    opacity: 1;
+}
+
+/* Footer Brutalist Styles */
+.nb-footer {
+    background-color: var(--color-black) !important;
+    color: var(--color-white) !important;
+    border-top: 3px solid var(--color-black);
+    font-family: 'Space Grotesk', sans-serif;
+    padding: 30px 0;
+    margin-top: auto;
+}
+
+.nb-footer-brand {
+    font-weight: 800;
+    font-size: 1.2rem;
+    letter-spacing: 0.05em;
+    color: var(--color-white) !important;
+    text-transform: uppercase;
+}
+
+.nb-footer-subtext {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+.nb-footer-links a {
+    color: var(--color-white) !important;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s ease;
+}
+
+.nb-footer-links a:hover {
+    border-bottom-color: var(--color-orange-primary);
 }

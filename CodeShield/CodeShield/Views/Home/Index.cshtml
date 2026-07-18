@@ -2,81 +2,161 @@
     ViewData["Title"] = "Secure Your Code";
 }
 
-<div class="container py-5">
+<div class="py-4">
+    <!-- Badge / Status Bar -->
+    <div class="text-center mb-4">
+        <span class="nb-badge nb-badge-light">
+            <span class="text-danger">●</span> VALKYRIE SECURITY: ACTIVE SHIELD
+        </span>
+    </div>
+
     <!-- Hero Section -->
-    <div class="row align-items-center justify-content-center text-center py-5">
-        <div class="col-lg-8">
-            <span class="badge bg-light text-primary border px-3 py-2 rounded-pill fw-semibold mb-3">
-                🛡️ Open Source Security Scanner
-            </span>
-            <h1 class="display-4 fw-bold text-dark tracking-tight mb-3">
-                Guard Your Code with <span class="text-primary" style="background: linear-gradient(135deg, var(--primary-color), #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Valkyrie</span>
-            </h1>
-            <p class="lead text-secondary mb-4 mx-auto style-width" style="max-width: 600px;">
-                Scan GitHub repositories for vulnerable packages and insecure code patterns. Get instant AI-driven explanations and fix suggestions.
-            </p>
-            
-            <div class="d-flex justify-content-center gap-3">
-                @if (User.Identity?.IsAuthenticated == true)
-                {
-                    <a asp-controller="Scan" asp-action="Index" class="cs-btn cs-btn-primary text-white text-decoration-none">
-                        Start New Scan
-                    </a>
-                    <a asp-controller="Dashboard" asp-action="Index" class="cs-btn btn btn-light border fw-semibold text-secondary text-decoration-none">
-                        Go to Dashboard
-                    </a>
-                }
-                else
-                {
-                    <a asp-controller="Account" asp-action="Register" class="cs-btn cs-btn-primary text-white text-decoration-none">
-                        Get Started Free
-                    </a>
-                    <a asp-controller="Account" asp-action="Login" class="cs-btn btn btn-light border fw-semibold text-secondary text-decoration-none">
-                        Sign In
-                    </a>
-                }
+    <div class="text-center py-5">
+        <h1 class="display-3 nb-heading mb-4">
+            READY TO SECURE?
+        </h1>
+        <p class="nb-mono fs-5 text-dark mb-5 mx-auto" style="max-width: 650px; font-weight: 500;">
+            No complex setup. No credit cards. Just tell us which public GitHub repository you want to scan for vulnerabilities.
+        </p>
+        
+        <div class="d-flex justify-content-center flex-wrap gap-3 mb-4">
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <a asp-controller="Scan" asp-action="Index" class="nb-btn nb-btn-primary">
+                    START NEW SCAN
+                </a>
+                <a asp-controller="Dashboard" asp-action="Index" class="nb-btn nb-btn-secondary">
+                    GO TO DASHBOARD
+                </a>
+            }
+            else
+            {
+                <a asp-controller="Account" asp-action="Register" class="nb-btn nb-btn-primary">
+                    GET STARTED FREE
+                </a>
+                <a asp-controller="Account" asp-action="Login" class="nb-btn nb-btn-secondary">
+                    SIGN IN TO ACCOUNT
+                </a>
+            }
+        </div>
+        <div class="nb-mono text-muted small mt-2">
+            * PUBLIC REPOSITORIES PROCESSED VIA GITHUB REST API
+        </div>
+    </div>
+
+    <hr class="nb-hr" />
+
+    <!-- Feature Grid Section -->
+    <div class="text-center mb-5">
+        <h2 class="nb-heading mb-2">WHY SCAN WITH VALKYRIE?</h2>
+        <p class="nb-mono text-muted">A modern training and security ground for scanning open-source projects.</p>
+    </div>
+
+    <div class="row g-4 justify-content-center">
+        <!-- Feature 1: Dependency Scanning -->
+        <div class="col-lg-4 col-md-6">
+            <div class="nb-card rookie-theme h-100">
+                <div class="nb-card-header">
+                    <div class="nb-card-title">DEPENDENCY SCAN</div>
+                    <div class="nb-card-subtitle">THIRD PARTY PACKAGE AUDIT</div>
+                </div>
+                <div class="nb-quote-box">
+                    "Verify that package.json and .csproj files are free of known vulnerabilities."
+                </div>
+                <div class="nb-card-body">
+                    <div>
+                        <div class="nb-meta-label">WHAT WE DO</div>
+                        <p class="nb-section-desc">Audit dependencies against the public OSV.dev security database.</p>
+                    </div>
+                    <div>
+                        <div class="nb-meta-label">THE TARGETS</div>
+                        <ul class="nb-card-list">
+                            <li>Scan npm packages in Node.js repos.</li>
+                            <li>Scan NuGet packages in .NET projects.</li>
+                            <li>Identify exact installed vs safe versions.</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <div class="nb-meta-label">GOAL</div>
+                        <p class="nb-goal-text">Stop software supply chain vulnerabilities before they enter production.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feature 2: Code Pattern scanning -->
+        <div class="col-lg-4 col-md-6">
+            <div class="nb-card adventurer-theme h-100">
+                <div class="nb-card-header">
+                    <div class="nb-card-title">CODE PATTERNS</div>
+                    <div class="nb-card-subtitle">STATIC HEURISTIC ANALYSIS</div>
+                </div>
+                <div class="nb-quote-box">
+                    "Locate hardcoded secrets, SQL injection risks, and insecure configurations."
+                </div>
+                <div class="nb-card-body">
+                    <div>
+                        <div class="nb-meta-label">WHAT WE DO</div>
+                        <p class="nb-section-desc">Scan source code for dangerous patterns and exposed credentials.</p>
+                    </div>
+                    <div>
+                        <div class="nb-meta-label">THE TARGETS</div>
+                        <ul class="nb-card-list">
+                            <li>Scan C# source files (.cs).</li>
+                            <li>Scan Python files (.py).</li>
+                            <li>Highlight insecure HTTP protocol usage.</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <div class="nb-meta-label">GOAL</div>
+                        <p class="nb-goal-text">Eliminate credentials leakage and SQL injection vectors immediately.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feature 3: AI Explanations -->
+        <div class="col-lg-4 col-md-6">
+            <div class="nb-card master-theme h-100">
+                <div class="nb-card-header">
+                    <div class="nb-card-title">AI REMEDIATION</div>
+                    <div class="nb-card-subtitle">INTELLIGENT RISK ANALYSIS</div>
+                </div>
+                <div class="nb-quote-box">
+                    "Explain each vulnerability in plain English and propose a secure code snippet."
+                </div>
+                <div class="nb-card-body">
+                    <div>
+                        <div class="nb-meta-label">WHAT WE DO</div>
+                        <p class="nb-section-desc">Translate technical vulnerability details into actionable code suggestions.</p>
+                    </div>
+                    <div>
+                        <div class="nb-meta-label">THE TARGETS</div>
+                        <ul class="nb-card-list">
+                            <li>Explain risks using AgentRouter (Anthropic).</li>
+                            <li>Generate direct, drop-in fix patterns.</li>
+                            <li>Provide educational context on fixes.</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <div class="nb-meta-label">GOAL</div>
+                        <p class="nb-goal-text">Educate the builder and speed up security remediation workflows.</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Features Section -->
-    <div class="row g-4 mt-5 pt-4">
-        <div class="col-md-4">
-            <div class="cs-card cs-card-hover p-4 h-100">
-                <div class="fs-2 mb-3 text-primary">📦</div>
-                <h5 class="fw-bold text-dark">Dependency Scanning</h5>
-                <p class="text-muted small mb-0">
-                    Instantly analyze `package.json` and `.csproj` files against the OSV.dev database to detect outdated and vulnerable third-party packages.
-                </p>
-            </div>
+    <!-- Trust / Badges Banner -->
+    <div class="text-center mt-5 pt-4">
+        <hr class="nb-hr" />
+        <div class="nb-mono text-uppercase tracking-wider text-muted mb-3" style="font-size: 0.8rem; font-weight: 700;">
+            SUPPORTS THE FOLLOWING ECOSYSTEMS
         </div>
-        <div class="col-md-4">
-            <div class="cs-card cs-card-hover p-4 h-100">
-                <div class="fs-2 mb-3 text-primary">🔍</div>
-                <h5 class="fw-bold text-dark">Code Pattern Analysis</h5>
-                <p class="text-muted small mb-0">
-                    Static check for C# and Python source files to catch hardcoded secrets, SQL injection risks, exposed configurations, and HTTP protocol issues.
-                </p>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="cs-card cs-card-hover p-4 h-100">
-                <div class="fs-2 mb-3 text-primary">🤖</div>
-                <h5 class="fw-bold text-dark">AI-Powered Fixes</h5>
-                <p class="text-muted small mb-0">
-                    Receive clear explanations of detected risks in plain English and obtain actionable code fix recommendations generated by AI.
-                </p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Trust Banner -->
-    <div class="text-center mt-5 pt-5 subtle-divider">
-        <p class="text-muted small text-uppercase fw-semibold tracking-wider">Supports Public Repositories for</p>
-        <div class="d-flex justify-content-center gap-4 align-items-center opacity-75 mt-3">
-            <span class="fw-bold text-secondary">🟢 npm (Node.js)</span>
-            <span class="fw-bold text-secondary">🔵 NuGet (.NET)</span>
-            <span class="fw-bold text-secondary">🐍 Python (Code Scanning)</span>
+        <div class="d-flex flex-wrap justify-content-center gap-3 mt-2">
+            <span class="nb-badge nb-badge-light">📦 NPM (NODE.JS)</span>
+            <span class="nb-badge nb-badge-light">⚙️ NUGET (.NET)</span>
+            <span class="nb-badge nb-badge-light">🐍 PYTHON (PATTERN SCANNING ONLY)</span>
         </div>
     </div>
 </div>
