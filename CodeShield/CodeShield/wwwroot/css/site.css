@@ -886,4 +886,62 @@ body {
 .nb-modal-footer {
     border-top: 3px solid var(--color-black) !important;
     padding: 1.25rem;
+}
+
+/* ==========================================
+   PHASE 3: DASHBOARD CUSTOMIZATIONS
+   ========================================== */
+
+.nb-grade-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border: 3px solid var(--color-black) !important;
+    box-shadow: 2px 2px 0px var(--color-black) !important;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 800;
+    font-size: 1.2rem;
+    border-radius: 0px !important;
+}
+
+.nb-grade-a, .nb-grade-b {
+    background-color: var(--rookie-border) !important;
+    color: var(--color-white) !important;
+}
+
+.nb-grade-c {
+    background-color: var(--adventurer-border) !important;
+    color: var(--color-black) !important;
+}
+
+.nb-grade-d, .nb-grade-f {
+    background-color: var(--typical-border) !important;
+    color: var(--color-white) !important;
+}
+
+.nb-dashboard-item {
+    border: 3px solid var(--color-black) !important;
+    box-shadow: 3px 3px 0px var(--color-black) !important;
+    background-color: var(--color-white) !important;
+    border-radius: 0px !important;
+    transition: all 0.1s ease;
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.nb-dashboard-item:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 5px 5px 0px var(--color-black) !important;
+}
+
+.nb-dashboard-icon-bg {
+    background-color: var(--color-bg-light) !important;
+    border: 2px solid var(--color-black) !important;
+    padding: 8px 12px;
+    font-size: 1.5rem;
+    line-height: 1;
 }
