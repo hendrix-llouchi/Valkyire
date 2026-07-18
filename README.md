@@ -1,4 +1,4 @@
-# 🛡️ CodeShield
+# 🛡️  Valkyire
 
 > A modular, web-based security scanner that analyzes **public GitHub repositories** for vulnerable packages and insecure code patterns — with plain-English AI explanations and fix suggestions.
 
