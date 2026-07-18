@@ -343,4 +343,25 @@ body {
 .cs-modal-footer {
     border-top: 1.5px solid var(--border-color);
     padding: 1rem 1.5rem 1.5rem;
+}
+
+/* Brand Logo Styles */
+.brand-logo {
+    height: 32px;
+    width: 32px;
+    object-fit: contain;
+    border-radius: 8px;
+    transition: transform 0.2s ease;
+}
+
+.navbar-brand:hover .brand-logo {
+    transform: scale(1.05);
+}
+
+.form-card-logo {
+    height: 64px;
+    width: 64px;
+    object-fit: contain;
+    border-radius: 14px;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
 }
