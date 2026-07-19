@@ -4,123 +4,112 @@
 }
 
 <div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <div>
-            <h1 class="h3 fw-bold text-dark mb-1">My Scans</h1>
-            <p class="text-muted small mb-0">View your repository scan history and security trends.</p>
+            <h1 class="nb-heading mb-1" style="font-size: 2rem;">MY SCANS</h1>
+            <p class="nb-mono text-muted small mb-0 text-uppercase">View your repository scan history and security trends.</p>
         </div>
         <div>
-            <a asp-controller="Scan" asp-action="Index" class="cs-btn cs-btn-primary text-white text-decoration-none d-flex align-items-center gap-2">
-                <span>🔍</span> New Scan
+            <a asp-controller="Scan" asp-action="Index" class="nb-btn nb-btn-primary d-flex align-items-center gap-2">
+                <span>🔍</span> NEW SCAN
             </a>
         </div>
     </div>
 
     @if (!Model.Any())
     {
-        <div class="cs-card p-5 text-center my-5 shadow-sm">
+        <div class="nb-card p-5 text-center my-5">
             <span class="fs-1 d-block mb-3">🛡️</span>
-            <h4 class="fw-bold text-dark">No Scan History Yet</h4>
-            <p class="text-muted small max-width-md mx-auto mb-4">
+            <h4 class="nb-heading mb-3">NO SCAN HISTORY YET</h4>
+            <p class="nb-mono text-muted small mx-auto mb-4" style="max-width: 500px; line-height: 1.6;">
                 You haven't scanned any GitHub repositories yet. Enter a repository URL to check for security vulnerabilities and code pattern issues.
             </p>
             <div class="d-flex justify-content-center">
-                <a asp-controller="Scan" asp-action="Index" class="cs-btn cs-btn-primary text-white text-decoration-none">
-                    Start Your First Scan
+                <a asp-controller="Scan" asp-action="Index" class="nb-btn nb-btn-primary">
+                    START YOUR FIRST SCAN
                 </a>
             </div>
         </div>
     }
     else
     {
-        <div class="cs-card p-4 shadow-sm">
+        <div class="nb-table-container">
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
+                <table class="table nb-table align-middle">
                     <thead>
-                        <tr class="text-muted small text-uppercase" style="font-size: 0.8rem;">
-                            <th class="border-0 px-3 py-2">Repository</th>
-                            <th class="border-0 px-3 py-2">Scan Date</th>
-                            <th class="border-0 px-3 py-2">Security Grade</th>
-                            <th class="border-0 px-3 py-2">Issues Found</th>
-                            <th class="border-0 px-3 py-2">Ecosystems</th>
-                            <th class="border-0 px-3 py-2 text-end">Actions</th>
+                        <tr>
+                            <th>Repository</th>
+                            <th>Scan Date</th>
+                            <th>Security Grade</th>
+                            <th>Issues Found</th>
+                            <th>Ecosystems</th>
+                            <th class="text-end">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach (var scan in Model)
                         {
-                            var gradeColorClass = scan.SecurityGrade switch
-                            {
-                                "A" => "bg-success text-white",
-                                "B" => "bg-success text-white",
-                                "C" => "bg-warning text-dark",
-                                "D" => "bg-danger text-white",
-                                "F" => "bg-danger text-white",
-                                _ => "bg-secondary text-white"
-                            };
+                            var gradeClass = (scan.SecurityGrade?.StartsWith("A") == true) || (scan.SecurityGrade?.StartsWith("B") == true) ? "nb-grade-a" :
+                                             (scan.SecurityGrade?.StartsWith("C") == true) ? "nb-grade-c" : "nb-grade-d";
 
                             <tr>
-                                <td class="px-3 py-3">
+                                <td>
                                     <div class="d-flex align-items-center gap-2">
                                         <span class="fs-5">📦</span>
                                         <div>
-                                            <a asp-controller="Scan" asp-action="Details" asp-route-id="@scan.Id" class="fw-bold text-dark text-decoration-none hover-primary">
+                                            <a asp-controller="Scan" asp-action="Details" asp-route-id="@scan.Id" class="fw-bold text-dark text-decoration-none hover-primary nb-heading" style="font-size: 0.95rem;">
                                                 @scan.RepositoryName
                                             </a>
-                                            <div class="text-muted small" style="font-size: 0.75rem;">
+                                            <div class="text-muted small nb-mono" style="font-size: 0.75rem;">
                                                 <a href="@scan.RepositoryUrl" target="_blank" class="text-decoration-none text-muted">@scan.RepositoryUrl</a>
                                             </div>
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-3 py-3 text-secondary small">
+                                <td class="nb-mono text-secondary small">
                                     @scan.ScannedAt.ToLocalTime().ToString("MMM dd, yyyy h:mm tt")
                                 </td>
-                                <td class="px-3 py-3">
+                                <td>
                                     <div class="d-flex align-items-center gap-2">
-                                        <span class="badge @gradeColorClass rounded-pill px-3 py-2 font-monospace fw-bold" style="font-size: 0.9rem;">Grade @scan.SecurityGrade</span>
+                                        <span class="nb-grade-badge @gradeClass fw-bold" style="width: 38px; height: 38px; font-size: 0.95rem; box-shadow: 1.5px 1.5px 0px var(--color-black) !important;">@scan.SecurityGrade</span>
                                         @if (scan.Status == CodeShield.Models.ScanStatus.PartialFailure)
                                         {
-                                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill" style="font-size: 0.7rem;">Partial Warning</span>
+                                            <span class="nb-badge nb-badge-light py-1 px-2" style="font-size: 0.65rem; box-shadow: none; border-width: 1px !important;">Partial Warning</span>
                                         }
                                     </div>
                                 </td>
-                                <td class="px-3 py-3">
+                                <td class="nb-mono small">
                                     @if (scan.TotalIssuesFound == 0)
                                     {
-                                        <span class="text-success small fw-semibold">✅ No issues found</span>
+                                        <span class="text-success fw-bold">✅ NO ISSUES</span>
                                     }
                                     else
                                     {
-                                        <span class="text-danger small fw-semibold">⚠️ @scan.TotalIssuesFound issues</span>
+                                        <span class="text-danger fw-bold">⚠️ @scan.TotalIssuesFound ISSUES</span>
                                     }
                                 </td>
-                                <td class="px-3 py-3 text-secondary small">
+                                <td>
                                     @if (!string.IsNullOrEmpty(scan.EcosystemsDetected))
                                     {
                                         var ecosystems = scan.EcosystemsDetected.Split(", ");
                                         foreach (var eco in ecosystems)
                                         {
-                                            var badgeClass = eco switch
-                                            {
-                                                "Npm" => "bg-warning-subtle text-warning-emphasis border border-warning-subtle",
-                                                "NuGet" => "bg-primary-subtle text-primary-emphasis border border-primary-subtle",
-                                                _ => "bg-info-subtle text-info-emphasis border border-info-subtle"
-                                            };
-                                            <span class="badge @badgeClass rounded-pill me-1" style="font-size: 0.7rem;">@eco</span>
+                                            var badgeClass = eco == "Npm" ? "adventurer-theme" :
+                                                             eco == "NuGet" ? "rookie-theme" : "nb-badge-light";
+                                            <span class="nb-badge @badgeClass py-0 px-2 font-monospace" style="font-size: 0.7rem; box-shadow: none; border-width: 1px !important;">@eco</span>
                                         }
                                     }
                                     else
                                     {
-                                        <span class="text-muted" style="font-size: 0.75rem;">None</span>
+                                        <span class="text-muted nb-mono" style="font-size: 0.75rem;">None</span>
                                     }
                                 </td>
-                                <td class="px-3 py-3 text-end">
+                                <td class="text-end">
                                     <div class="d-flex justify-content-end align-items-center gap-2">
-                                        <a asp-controller="Scan" asp-action="Details" asp-route-id="@scan.Id" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                                        <a asp-controller="Scan" asp-action="Details" asp-route-id="@scan.Id" class="nb-btn nb-btn-secondary px-3 py-1 fs-7" style="box-shadow: 2px 2px 0px var(--color-black) !important;">
                                             View
                                         </a>
-                                        <a asp-controller="Scan" asp-action="Index" asp-route-repositoryUrl="@scan.RepositoryUrl" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                                        <a asp-controller="Scan" asp-action="Index" asp-route-repositoryUrl="@scan.RepositoryUrl" class="nb-btn nb-btn-primary px-3 py-1 fs-7" style="box-shadow: 2px 2px 0px var(--color-black) !important;">
                                             Rescan
                                         </a>
                                     </div>
@@ -136,7 +125,7 @@
 
 <style>
     .hover-primary:hover {
-        color: var(--primary-color) !important;
+        color: var(--color-orange-primary) !important;
         text-decoration: underline !important;
     }
 </style>

@@ -886,4 +886,188 @@ body {
 .nb-modal-footer {
     border-top: 3px solid var(--color-black) !important;
     padding: 1.25rem;
+}
+
+/* ==========================================
+   PHASE 3: DASHBOARD CUSTOMIZATIONS
+   ========================================== */
+
+.nb-grade-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border: 3px solid var(--color-black) !important;
+    box-shadow: 2px 2px 0px var(--color-black) !important;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 800;
+    font-size: 1.2rem;
+    border-radius: 0px !important;
+}
+
+.nb-grade-a, .nb-grade-b {
+    background-color: var(--rookie-border) !important;
+    color: var(--color-white) !important;
+}
+
+.nb-grade-c {
+    background-color: var(--adventurer-border) !important;
+    color: var(--color-black) !important;
+}
+
+.nb-grade-d, .nb-grade-f {
+    background-color: var(--typical-border) !important;
+    color: var(--color-white) !important;
+}
+
+.nb-dashboard-item {
+    border: 3px solid var(--color-black) !important;
+    box-shadow: 3px 3px 0px var(--color-black) !important;
+    background-color: var(--color-white) !important;
+    border-radius: 0px !important;
+    transition: all 0.1s ease;
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.nb-dashboard-item:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 5px 5px 0px var(--color-black) !important;
+}
+
+.nb-dashboard-icon-bg {
+    background-color: var(--color-bg-light) !important;
+    border: 2px solid var(--color-black) !important;
+    padding: 8px 12px;
+    font-size: 1.5rem;
+    line-height: 1;
+}
+
+/* ==========================================
+   PHASE 4: SCAN & RESULTS CUSTOMIZATIONS
+   ========================================== */
+
+/* Brutalist Alert Warnings & Success */
+.nb-alert-warning {
+    background-color: var(--adventurer-bg-tint) !important;
+    border: 3px solid var(--color-black) !important;
+    color: var(--adventurer-text) !important;
+    box-shadow: 3px 3px 0px var(--color-black) !important;
+    font-family: 'Space Mono', monospace;
+    border-radius: 0px !important;
+}
+
+.nb-alert-success {
+    background-color: var(--foundry-bg-tint) !important;
+    border: 3px solid var(--color-black) !important;
+    color: var(--foundry-text) !important;
+    box-shadow: 3px 3px 0px var(--color-black) !important;
+    font-family: 'Space Mono', monospace;
+    border-radius: 0px !important;
+}
+
+/* Brutalist Navigation Pills for Tabs */
+.nb-nav-pills {
+    display: flex;
+    background-color: var(--color-bg-light) !important;
+    padding: 6px !important;
+    border: 3px solid var(--color-black) !important;
+    border-radius: 0px !important;
+    gap: 4px;
+}
+
+.nb-nav-pills .nav-link {
+    flex: 1;
+    text-align: center;
+    color: var(--color-black) !important;
+    border-radius: 0px !important;
+    font-family: 'Space Grotesk', sans-serif !important;
+    font-weight: 700;
+    font-size: 0.95rem;
+    padding: 10px 16px;
+    border: none !important;
+    background: transparent !important;
+    text-transform: uppercase;
+    transition: all 0.1s ease;
+}
+
+.nb-nav-pills .nav-link.active {
+    background-color: var(--color-black) !important;
+    color: var(--color-white) !important;
+    box-shadow: none !important;
+}
+
+/* Brutalist Code Display Box */
+.nb-code-box {
+    border: 3px solid var(--color-black) !important;
+    border-radius: 0px !important;
+    background-color: var(--color-black) !important;
+    color: var(--color-white) !important;
+    padding: 12px;
+    font-family: 'Space Mono', monospace !important;
+    box-shadow: 2px 2px 0px var(--color-black) !important;
+}
+
+/* Brutalist AI Explanation Boxes */
+.nb-ai-box {
+    background-color: var(--color-bg-light) !important;
+    border: 3px solid var(--color-black) !important;
+    border-radius: 0px !important;
+    padding: 16px;
+    margin-top: 10px;
+    box-shadow: 2px 2px 0px var(--color-black) !important;
+}
+
+.nb-ai-box-info {
+    border-left: 8px solid var(--master-border) !important;
+}
+
+.nb-ai-box-success {
+    border-left: 8px solid var(--foundry-border) !important;
+}
+
+/* Brutalist Scan History Table */
+.nb-table-container {
+    border: 3px solid var(--color-black) !important;
+    box-shadow: 4px 4px 0px var(--color-black) !important;
+    background-color: var(--color-white) !important;
+    border-radius: 0px !important;
+    overflow: hidden;
+}
+
+.nb-table {
+    font-family: 'Space Grotesk', sans-serif;
+    margin-bottom: 0 !important;
+}
+
+.nb-table thead th {
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    color: var(--color-black) !important;
+    background-color: var(--color-bg-light) !important;
+    border-bottom: 3px solid var(--color-black) !important;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    padding: 12px 16px !important;
+}
+
+.nb-table tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+.nb-table tbody tr:hover {
+    background-color: var(--color-bg-light) !important;
+}
+
+.nb-table tbody td {
+    border-bottom: 2px solid var(--color-black) !important;
+    padding: 16px !important;
+    color: var(--color-black) !important;
+}
+
+.nb-table tbody tr:last-child td {
+    border-bottom: none !important;
 }

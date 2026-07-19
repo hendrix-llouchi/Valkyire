@@ -7,20 +7,20 @@
     <div class="row justify-content-center">
         <div class="col-lg-9">
             <!-- Scan Form Card -->
-            <div class="cs-card p-4 p-md-5 mb-4" id="scan-form-card">
+            <div class="nb-card p-4 p-md-5 mb-4" id="scan-form-card">
                 <div class="text-center mb-4">
                     <span class="fs-1">🔍</span>
-                    <h1 class="h3 fw-bold text-dark mt-2">Scan GitHub Repository</h1>
-                    <p class="text-muted small">Analyze a public GitHub repository for vulnerable dependencies and security issues.</p>
+                    <h1 class="nb-heading mt-2 mb-2" style="font-size: 2rem;">SCAN GITHUB REPOSITORY</h1>
+                    <p class="nb-mono text-muted small text-uppercase">Analyze a public GitHub repository for vulnerable dependencies and security issues.</p>
                 </div>
 
                 <form asp-controller="Scan" asp-action="Index" method="post" id="scan-form">
                     @Html.AntiForgeryToken()
                     
                     <div class="mb-3">
-                        <label for="RepositoryUrl" class="form-label fw-semibold text-secondary small">GitHub Repository URL</label>
+                        <label for="RepositoryUrl" class="form-label nb-mono fw-bold text-dark small text-uppercase mb-2">GitHub Repository URL</label>
                         <input type="text" 
-                               class="form-control cs-input w-100 @(Model.IsSubmitted && !string.IsNullOrEmpty(Model.ErrorMessage) ? "is-invalid" : "")" 
+                               class="form-control nb-input w-100 @(Model.IsSubmitted && !string.IsNullOrEmpty(Model.ErrorMessage) ? "is-invalid" : "")" 
                                id="RepositoryUrl" 
                                name="RepositoryUrl" 
                                value="@Model.RepositoryUrl" 
@@ -29,23 +29,23 @@
                         
                         @if (Model.IsSubmitted && !string.IsNullOrEmpty(Model.ErrorMessage))
                         {
-                            <div class="invalid-feedback d-block mt-2 fw-medium text-danger small">
+                            <div class="invalid-feedback d-block mt-2 fw-bold text-danger nb-mono small">
                                 ⚠️ @Model.ErrorMessage
                             </div>
                         }
                     </div>
 
                     <div class="d-grid mt-4">
-                        <button type="submit" class="cs-btn cs-btn-primary text-white">Analyze Repository</button>
+                        <button type="submit" class="nb-btn nb-btn-primary">Analyze Repository</button>
                     </div>
                 </form>
             </div>
 
             <!-- Loading Spinner State -->
-            <div class="cs-card p-5 mb-4 text-center d-none" id="scan-loader">
-                <div class="cs-loader mb-4"></div>
-                <h4 class="fw-bold text-dark">Analyzing Repository...</h4>
-                <p class="text-muted small mb-0">Checking file structure, extracting package versions, scanning code patterns, and generating AI explanations. For repositories with many issues, this may take several minutes to respect API rate limits. Please do not close this window.</p>
+            <div class="nb-card p-5 mb-4 text-center d-none" id="scan-loader">
+                <div class="cs-loader mb-4 border-dark" style="border-width: 4px;"></div>
+                <h4 class="nb-heading mb-3">ANALYZING REPOSITORY...</h4>
+                <p class="nb-mono text-muted small text-uppercase mb-0" style="line-height: 1.6;">Checking file structure, extracting package versions, scanning code patterns, and generating AI explanations. For repositories with many issues, this may take several minutes to respect API rate limits. Please do not close this window.</p>
             </div>
 
             @if (Model.IsSubmitted && string.IsNullOrEmpty(Model.ErrorMessage))
@@ -54,28 +54,28 @@
                     <!-- Warning Banners -->
                     @if (Model.DetectedEcosystems != null && Model.DetectedEcosystems.Contains(CodeShield.Models.Ecosystem.Python) && !Model.DetectedEcosystems.Contains(CodeShield.Models.Ecosystem.Npm) && !Model.DetectedEcosystems.Contains(CodeShield.Models.Ecosystem.NuGet))
                     {
-                        <div class="alert cs-alert-warning border-0 shadow-sm p-4 mb-4 rounded-3 d-flex align-items-start" id="python-warning-banner">
+                        <div class="alert nb-alert-warning p-4 mb-4 d-flex align-items-start" id="python-warning-banner">
                             <span class="fs-3 me-3">⚠️</span>
                             <div>
-                                <h5 class="alert-heading fw-bold mb-1">Python Package Scan Limitation</h5>
-                                <p class="mb-0 text-dark small">Package vulnerability scanning is disabled for Python repositories. Code pattern scanning is active for Python source files, but no third-party dependency vulnerability checks are performed.</p>
+                                <h5 class="alert-heading nb-heading mb-1" style="font-size: 1.1rem;">Python Package Scan Limitation</h5>
+                                <p class="mb-0 small text-uppercase" style="font-size: 0.8rem; font-weight: 600;">Package vulnerability scanning is disabled for Python repositories. Code pattern scanning is active for Python source files, but no third-party dependency vulnerability checks are performed.</p>
                             </div>
                         </div>
                     }
 
                     @if (!string.IsNullOrEmpty(Model.OsvWarningMessage))
                     {
-                        <div class="alert cs-alert-warning border-0 shadow-sm p-4 mb-4 rounded-3 d-flex align-items-start" id="osv-warning-banner">
+                        <div class="alert nb-alert-warning p-4 mb-4 d-flex align-items-start" id="osv-warning-banner">
                             <span class="fs-3 me-3">⚠️</span>
                             <div>
-                                <h5 class="alert-heading fw-bold mb-1">Partial Scan Results</h5>
-                                <p class="mb-0 text-dark small">@Model.OsvWarningMessage</p>
+                                <h5 class="alert-heading nb-heading mb-1" style="font-size: 1.1rem;">Partial Scan Results</h5>
+                                <p class="mb-0 small text-uppercase" style="font-size: 0.8rem; font-weight: 600;">@Model.OsvWarningMessage</p>
                             </div>
                         </div>
                     }
 
                     <!-- Tabs Control -->
-                    <ul class="nav cs-nav-pills mb-4" id="scanTabs" role="tablist">
+                    <ul class="nav nb-nav-pills mb-4" id="scanTabs" role="tablist">
                         <li class="nav-item" role="presentation" style="flex: 1;">
                             <button class="nav-link w-100 active" id="packages-tab" data-bs-toggle="pill" data-bs-target="#packages-pane" type="button" role="tab" aria-controls="packages-pane" aria-selected="true">
                                 📦 Package Dependencies
@@ -107,25 +107,25 @@
                                                      ecosystem == CodeShield.Models.Ecosystem.NuGet ? "bg-primary text-white" : "bg-info text-dark";
                                     var ecosystemPackages = Model.Packages?.Where(p => p.Ecosystem == ecosystem).ToList() ?? new List<CodeShield.Models.DependencyPackage>();
 
-                                    <div class="cs-card p-4 mb-4">
-                                        <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
-                                            <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                                    <div class="nb-card p-4 mb-4">
+                                        <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom border-dark">
+                                            <h5 class="nb-heading mb-0 d-flex align-items-center gap-2">
                                                 <span>@(ecosystem == CodeShield.Models.Ecosystem.Npm ? "🟢" : ecosystem == CodeShield.Models.Ecosystem.NuGet ? "🔵" : "🐍")</span> 
                                                 @ecosystemName Packages
                                             </h5>
-                                            <span class="badge @badgeColor px-3 py-2 fw-semibold">@ecosystemPackages.Count packages</span>
+                                            <span class="nb-badge nb-badge-light py-1 px-3 fs-7">@ecosystemPackages.Count packages</span>
                                         </div>
 
                                         @if (ecosystem == CodeShield.Models.Ecosystem.Python)
                                         {
-                                            <div class="alert cs-alert-warning p-3 mb-0 rounded-3">
-                                                <p class="mb-0 small fw-medium">
+                                            <div class="alert nb-alert-warning p-3 mb-0">
+                                                <p class="mb-0 small fw-bold">
                                                     ⚠️ Package dependency vulnerability scans are currently disabled for Python.
                                                 </p>
                                             </div>
                                             @if (ecosystemPackages.Count == 0)
                                             {
-                                                <div class="p-4 text-center text-muted small">
+                                                <div class="p-4 text-center text-muted nb-mono small">
                                                     No python dependency packages listed in requirements.txt
                                                 </div>
                                             }
@@ -135,9 +135,9 @@
                                                     @foreach (var pkg in ecosystemPackages)
                                                     {
                                                         <div class="col-md-6 col-lg-4">
-                                                            <div class="p-2 border rounded-3 bg-light d-flex justify-content-between align-items-center">
-                                                                <span class="fw-semibold text-secondary small text-truncate" style="max-width: 120px;">@pkg.PackageName</span>
-                                                                <span class="badge bg-white text-dark border font-monospace small">@pkg.Version</span>
+                                                            <div class="p-2 border border-2 border-dark bg-white d-flex justify-content-between align-items-center nb-mono">
+                                                                <span class="fw-bold text-dark small text-truncate" style="max-width: 120px;">@pkg.PackageName</span>
+                                                                <span class="nb-badge nb-badge-light py-0 px-2 font-monospace small" style="box-shadow: none; border-width: 1px !important;">@pkg.Version</span>
                                                             </div>
                                                         </div>
                                                     }
@@ -150,8 +150,8 @@
                                             var vulnPackageCount = vulnerablePackages.Count;
                                             var totalPackageCount = ecosystemPackages.Count;
 
-                                            <div class="p-3 rounded-3 mb-3 @(vulnPackageCount > 0 ? "cs-alert-danger" : "cs-alert-success")">
-                                                <p class="mb-0 small fw-semibold">
+                                            <div class="p-3 mb-3 @(vulnPackageCount > 0 ? "nb-alert-danger text-danger" : "nb-alert-success text-success")">
+                                                <p class="mb-0 small fw-bold">
                                                     @if (vulnPackageCount > 0)
                                                     {
                                                         <span>⚠️ Attention required: @vulnPackageCount of @totalPackageCount @ecosystemName dependencies have known security risks.</span>
@@ -168,12 +168,12 @@
                                                 <div class="d-flex flex-column gap-3">
                                                     @foreach (var pkg in vulnerablePackages)
                                                     {
-                                                        <div class="p-3 border rounded-3 bg-light">
-                                                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                                                <h6 class="fw-bold mb-0 text-dark small">
+                                                        <div class="p-3 border border-2 border-dark bg-white">
+                                                            <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                                                                <h6 class="nb-heading mb-0 text-dark small">
                                                                     📦 @pkg.PackageName
                                                                 </h6>
-                                                                <span class="badge bg-white text-dark border font-monospace">Version: @pkg.Version</span>
+                                                                <span class="nb-badge nb-badge-light font-monospace py-1 px-2 fs-7" style="box-shadow: none;">Version: @pkg.Version</span>
                                                             </div>
                                                             
                                                             <div class="d-flex flex-column gap-2">
@@ -181,10 +181,10 @@
                                                                 {
                                                                     var severityClass = vuln.Severity switch
                                                                     {
-                                                                        CodeShield.Models.Severity.Critical => "grade-d",
-                                                                        CodeShield.Models.Severity.High => "grade-c",
-                                                                        CodeShield.Models.Severity.Medium => "bg-info text-dark",
-                                                                        _ => "bg-secondary text-white"
+                                                                        CodeShield.Models.Severity.Critical => "nb-badge typical-theme",
+                                                                        CodeShield.Models.Severity.High => "nb-badge typical-theme",
+                                                                        CodeShield.Models.Severity.Medium => "nb-badge adventurer-theme",
+                                                                        _ => "nb-badge nb-badge-light"
                                                                     };
                                                                     var borderClass = vuln.Severity switch
                                                                     {
@@ -194,36 +194,36 @@
                                                                         _ => "border-secondary"
                                                                     };
                                                                     
-                                                                    <div class="p-3 bg-white rounded-3 border-start border-4 @borderClass shadow-sm">
+                                                                    <div class="p-3 bg-white border border-2 border-dark border-start border-5 @borderClass shadow-sm" style="border-left-width: 6px !important;">
                                                                         <div class="d-flex justify-content-between align-items-center mb-2">
                                                                             <span class="fw-bold font-monospace text-secondary small">@vuln.Id</span>
-                                                                            <span class="badge @severityClass px-2 py-1 font-monospace" style="font-size: 0.7rem; box-shadow: none;">@vuln.Severity</span>
+                                                                            <span class="@severityClass py-1 px-2 font-monospace" style="font-size: 0.7rem; box-shadow: none;">@vuln.Severity</span>
                                                                         </div>
                                                                         <p class="mb-2 text-secondary small">@vuln.Description</p>
                                                                         
                                                                         <!-- AI Explanation and Fix Suggestion -->
                                                                         @if (!string.IsNullOrEmpty(vuln.AiExplanation) || !string.IsNullOrEmpty(vuln.AiFixSuggestion))
                                                                         {
-                                                                            <div class="mt-3 pt-3 border-top">
+                                                                            <div class="mt-3 pt-3 border-top border-dark">
                                                                                 @if (!string.IsNullOrEmpty(vuln.AiExplanation))
                                                                                 {
-                                                                                    <div class="mb-2 bg-light p-2 rounded-2 border-start border-3 border-info">
-                                                                                        <span class="d-block fw-bold text-dark mb-1" style="font-size: 0.8rem;">🤖 AI Explanation</span>
-                                                                                        <p class="mb-0 text-muted small">@vuln.AiExplanation</p>
+                                                                                    <div class="nb-ai-box nb-ai-box-info mb-2">
+                                                                                        <span class="d-block nb-heading mb-1 text-start" style="font-size: 0.8rem;">🤖 AI Explanation</span>
+                                                                                        <p class="mb-0 text-dark small" style="font-weight: 500;">@vuln.AiExplanation</p>
                                                                                     </div>
                                                                                 }
                                                                                 @if (!string.IsNullOrEmpty(vuln.AiFixSuggestion))
                                                                                 {
-                                                                                    <div class="bg-light p-2 rounded-2 border-start border-3 border-success">
-                                                                                        <span class="d-block fw-bold text-dark mb-1" style="font-size: 0.8rem;">💡 Suggested Fix</span>
-                                                                                        <p class="mb-0 text-muted small">@vuln.AiFixSuggestion</p>
+                                                                                    <div class="nb-ai-box nb-ai-box-success">
+                                                                                        <span class="d-block nb-heading mb-1 text-start" style="font-size: 0.8rem;">💡 Suggested Fix</span>
+                                                                                        <p class="mb-0 text-dark small" style="font-weight: 500;">@vuln.AiFixSuggestion</p>
                                                                                     </div>
                                                                                 }
                                                                             </div>
                                                                         }
                                                                         else
                                                                         {
-                                                                            <div class="mt-3 pt-2 border-top text-muted small d-flex align-items-center gap-1">
+                                                                            <div class="mt-3 pt-2 border-top border-dark text-muted small d-flex align-items-center gap-1 nb-mono">
                                                                                 <span>🤖</span> <em>AI explanation unavailable for this issue.</em>
                                                                             </div>
                                                                         }
@@ -240,10 +240,10 @@
                             }
                             else
                             {
-                                <div class="cs-card p-5 text-center text-muted">
+                                <div class="nb-card p-5 text-center text-muted">
                                     <span class="fs-1 d-block mb-3">📁</span>
-                                    <h5 class="fw-bold text-dark">No Supported Ecosystems Detected</h5>
-                                    <p class="small mb-0">This repository does not contain supported package files (e.g., package.json, *.csproj, requirements.txt).</p>
+                                    <h5 class="nb-heading text-dark">No Supported Ecosystems Detected</h5>
+                                    <p class="nb-mono small mb-0">This repository does not contain supported package files (e.g., package.json, *.csproj, requirements.txt).</p>
                                 </div>
                             }
                         </div>
@@ -252,20 +252,20 @@
                         <div class="tab-pane fade" id="issues-pane" role="tabpanel" aria-labelledby="issues-tab">
                             @if (Model.CodeIssues == null || Model.CodeIssues.Count == 0)
                             {
-                                <div class="cs-card p-5 text-center shadow-sm">
+                                <div class="nb-card p-5 text-center text-muted">
                                     <span class="fs-1 d-block mb-3">✅</span>
-                                    <h5 class="fw-bold text-dark">No Insecure Code Patterns Found</h5>
-                                    <p class="small mb-0 text-muted">All scanned source files look secure. No hardcoded secrets, SQL injection risks, exposed configs, or insecure HTTP URLs were found.</p>
+                                    <h5 class="nb-heading text-dark">No Insecure Code Patterns Found</h5>
+                                    <p class="nb-mono small mb-0">All scanned source files look secure. No hardcoded secrets, SQL injection risks, exposed configs, or insecure HTTP URLs were found.</p>
                                 </div>
                             }
                             else
                             {
-                                <div class="cs-card p-4">
-                                    <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
-                                        <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                                <div class="nb-card p-4">
+                                    <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom border-dark">
+                                        <h5 class="nb-heading mb-0 d-flex align-items-center gap-2">
                                             <span>🔍</span> Code Security Issues
                                         </h5>
-                                        <span class="badge bg-danger text-white px-3 py-2 fw-semibold">@Model.CodeIssues.Count issues found</span>
+                                        <span class="nb-badge py-1 px-3 fs-7">@Model.CodeIssues.Count issues found</span>
                                     </div>
                                     
                                     <div class="d-flex flex-column gap-3">
@@ -273,10 +273,10 @@
                                         {
                                             var severityClass = issue.Severity switch
                                             {
-                                                CodeShield.Models.Severity.Critical => "grade-d",
-                                                CodeShield.Models.Severity.High => "grade-c",
-                                                CodeShield.Models.Severity.Medium => "bg-info text-dark",
-                                                _ => "bg-secondary text-white"
+                                                CodeShield.Models.Severity.Critical => "nb-badge typical-theme",
+                                                CodeShield.Models.Severity.High => "nb-badge typical-theme",
+                                                CodeShield.Models.Severity.Medium => "nb-badge adventurer-theme",
+                                                _ => "nb-badge nb-badge-light"
                                             };
                                             var borderClass = issue.Severity switch
                                             {
@@ -286,43 +286,43 @@
                                                 _ => "border-secondary"
                                             };
 
-                                            <div class="p-3 border rounded-3 bg-light border-start border-4 @borderClass shadow-sm">
+                                            <div class="p-3 border border-2 border-dark bg-white border-start border-5 @borderClass shadow-sm" style="border-left-width: 6px !important;">
                                                 <div class="d-flex justify-content-between align-items-start mb-2">
                                                     <div>
-                                                        <h6 class="fw-bold mb-1 text-dark small">
+                                                        <h6 class="nb-heading mb-1 text-dark small">
                                                             📄 @issue.FileName
                                                         </h6>
-                                                        <span class="text-muted small">Line @issue.LineNumber &bull; <strong class="text-secondary">@issue.IssueType</strong></span>
+                                                        <span class="nb-mono text-muted small" style="font-size: 0.8rem;">Line @issue.LineNumber &bull; <strong class="text-secondary">@issue.IssueType</strong></span>
                                                     </div>
-                                                    <span class="badge @severityClass px-2 py-1 font-monospace" style="font-size: 0.7rem; box-shadow: none;">@issue.Severity</span>
+                                                    <span class="@severityClass py-1 px-2 font-monospace" style="font-size: 0.7rem; box-shadow: none;">@issue.Severity</span>
                                                 </div>
                                                 
                                                 <!-- Code Snippet -->
-                                                <div class="bg-dark text-light p-2 rounded-2 font-monospace small mb-3 text-start" style="overflow-x: auto; white-space: pre;"><code>@issue.CodeSnippet</code></div>
+                                                <div class="nb-code-box mb-3 text-start" style="overflow-x: auto; white-space: pre;"><code>@issue.CodeSnippet</code></div>
                                                 
                                                 <!-- AI Explanation and Fix Suggestion -->
                                                 @if (!string.IsNullOrEmpty(issue.AiExplanation) || !string.IsNullOrEmpty(issue.AiFixSuggestion))
                                                 {
-                                                    <div class="mt-3 pt-3 border-top">
+                                                    <div class="mt-3 pt-3 border-top border-dark">
                                                         @if (!string.IsNullOrEmpty(issue.AiExplanation))
                                                         {
-                                                            <div class="mb-2 bg-light p-2 rounded-2 border-start border-3 border-info text-start">
-                                                                <span class="d-block fw-bold text-dark mb-1" style="font-size: 0.8rem;">🤖 AI Explanation</span>
-                                                                <p class="mb-0 text-muted small">@issue.AiExplanation</p>
+                                                            <div class="nb-ai-box nb-ai-box-info mb-2 text-start">
+                                                                <span class="d-block nb-heading mb-1" style="font-size: 0.8rem;">🤖 AI Explanation</span>
+                                                                <p class="mb-0 text-dark small" style="font-weight: 500;">@issue.AiExplanation</p>
                                                             </div>
                                                         }
                                                         @if (!string.IsNullOrEmpty(issue.AiFixSuggestion))
                                                         {
-                                                            <div class="bg-light p-2 rounded-2 border-start border-3 border-success text-start">
-                                                                <span class="d-block fw-bold text-dark mb-1" style="font-size: 0.8rem;">💡 Suggested Fix</span>
-                                                                <p class="mb-0 text-muted small">@issue.AiFixSuggestion</p>
+                                                            <div class="nb-ai-box nb-ai-box-success text-start">
+                                                                <span class="d-block nb-heading mb-1" style="font-size: 0.8rem;">💡 Suggested Fix</span>
+                                                                <p class="mb-0 text-dark small" style="font-weight: 500;">@issue.AiFixSuggestion</p>
                                                             </div>
                                                         }
                                                     </div>
                                                 }
                                                 else
                                                 {
-                                                    <div class="mt-3 pt-2 border-top text-muted small d-flex align-items-center gap-1">
+                                                    <div class="mt-3 pt-2 border-top border-dark text-muted small d-flex align-items-center gap-1 nb-mono">
                                                         <span>🤖</span> <em>AI explanation unavailable for this issue.</em>
                                                     </div>
                                                 }
@@ -337,16 +337,16 @@
                         <div class="tab-pane fade" id="files-pane" role="tabpanel" aria-labelledby="files-tab">
                             @if (Model.Files != null)
                             {
-                                <div class="cs-card p-4">
-                                    <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
-                                        <h5 class="fw-bold text-dark mb-0">Files Scanned</h5>
-                                        <span class="badge bg-light text-dark border px-3 py-2 fw-semibold">@Model.Files.Count files</span>
+                                <div class="nb-card p-4">
+                                    <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom border-dark">
+                                        <h5 class="nb-heading mb-0">Files Scanned</h5>
+                                        <span class="nb-badge nb-badge-light py-1 px-3 fs-7">@Model.Files.Count files</span>
                                     </div>
 
-                                    <div style="max-height: 400px; overflow-y: auto;" class="rounded-3 border">
+                                    <div style="max-height: 400px; overflow-y: auto; border: 3px solid var(--color-black);" class="bg-white">
                                         @if (Model.Files.Count == 0)
                                         {
-                                            <div class="p-4 text-center text-muted small">
+                                            <div class="p-4 text-center text-muted nb-mono small">
                                                 No files checked in this repository.
                                             </div>
                                         }
@@ -355,7 +355,7 @@
                                             <div class="list-group list-group-flush">
                                                 @foreach (var file in Model.Files)
                                                 {
-                                                    <div class="list-group-item font-monospace small px-3 py-2 text-secondary d-flex align-items-center gap-2">
+                                                    <div class="list-group-item border-bottom border-dark font-monospace small px-3 py-2 text-dark d-flex align-items-center gap-2">
                                                         <span>📄</span> @file
                                                     </div>
                                                 }
