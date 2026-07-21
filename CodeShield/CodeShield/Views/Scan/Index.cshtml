@@ -42,10 +42,17 @@
             </div>
 
             <!-- Loading Spinner State -->
-            <div class="nb-card p-5 mb-4 text-center d-none" id="scan-loader">
-                <div class="cs-loader mb-4 border-dark" style="border-width: 4px;"></div>
-                <h4 class="nb-heading mb-3">ANALYZING REPOSITORY...</h4>
-                <p class="nb-mono text-muted small text-uppercase mb-0" style="line-height: 1.6;">Checking file structure, extracting package versions, scanning code patterns, and generating AI explanations. For repositories with many issues, this may take several minutes to respect API rate limits. Please do not close this window.</p>
+            <div class="nb-card p-5 mb-4 text-center d-none mx-auto" id="scan-loader" style="max-width: 650px;">
+                <div class="d-flex flex-column align-items-center justify-content-center">
+                    <!-- Centered Loading Button Badge -->
+                    <div class="d-inline-flex align-items-center justify-content-center gap-2 nb-btn nb-btn-primary px-4 py-2 mb-4 disabled" style="cursor: not-allowed;">
+                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="width: 1.2rem; height: 1.2rem; border-width: 3px;"></span>
+                        <span class="nb-heading fs-6 mb-0 text-white">Analyzing Repository...</span>
+                    </div>
+
+                    <h4 class="nb-heading mb-3">SCAN IN PROGRESS</h4>
+                    <p class="nb-mono text-muted small text-uppercase mb-0" style="line-height: 1.6; max-width: 520px;">Checking file structure, extracting package versions, scanning code patterns, and generating AI explanations. For repositories with many issues, this may take several minutes to respect API rate limits. Please do not close this window.</p>
+                </div>
             </div>
 
             @if (Model.IsSubmitted && string.IsNullOrEmpty(Model.ErrorMessage))
