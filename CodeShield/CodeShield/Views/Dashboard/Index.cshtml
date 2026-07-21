@@ -1,5 +1,31 @@
+@model CodeShield.Models.DashboardViewModel
 @{
     ViewData["Title"] = "Dashboard";
+
+    string gradeThemeClass = Model.OverallGrade?.StartsWith("A") == true || Model.OverallGrade?.StartsWith("B") == true ? "rookie-theme" :
+                            Model.OverallGrade?.StartsWith("C") == true ? "adventurer-theme" :
+                            Model.OverallGrade == "N/A" ? "" : "typical-theme";
+
+    string gradeBadgeClass = string.IsNullOrEmpty(Model.OverallGrade) || Model.OverallGrade == "N/A" ? "nb-grade-a" : $"nb-grade-{Model.OverallGrade.ToLower()}";
+
+    string GetRelativeTime(DateTime dateTime)
+    {
+        var span = DateTime.UtcNow - dateTime;
+        if (span.TotalMinutes < 1) return "just now";
+        if (span.TotalMinutes < 60) return $"{(int)span.TotalMinutes}m ago";
+        if (span.TotalHours < 24) return $"{(int)span.TotalHours}h ago";
+        if (span.TotalDays < 7) return $"{(int)span.TotalDays}d ago";
+        return dateTime.ToString("MMM dd, yyyy");
+    }
+
+    string GetEcosystemIcon(string? ecosystems)
+    {
+        if (string.IsNullOrEmpty(ecosystems)) return "📦";
+        if (ecosystems.Contains("Python") && !ecosystems.Contains("Npm") && !ecosystems.Contains("NuGet")) return "🐍";
+        if (ecosystems.Contains("Npm")) return "🟢";
+        if (ecosystems.Contains("NuGet")) return "🔵";
+        return "📦";
+    }
 }
 
 <div class="container py-4">
@@ -9,7 +35,10 @@
             <h1 class="nb-heading mb-1" style="font-size: 2rem;">SECURITY CONTROL CENTER</h1>
             <p class="nb-mono text-muted small mb-0 text-uppercase">Welcome back, @(User.Identity?.Name). Overview of repository security.</p>
         </div>
-        <div>
+        <div class="d-flex gap-2">
+            <a asp-controller="Scan" asp-action="History" class="nb-btn nb-btn-secondary d-flex align-items-center gap-2">
+                <span>📜</span> SCAN HISTORY
+            </a>
             <a asp-controller="Scan" asp-action="Index" class="nb-btn nb-btn-primary d-flex align-items-center gap-2">
                 <span>🔍</span> SCAN REPOSITORY
             </a>
@@ -22,27 +51,27 @@
             <div class="nb-card p-4 flex-row align-items-center justify-content-between">
                 <div>
                     <p class="nb-mono text-muted small fw-bold text-uppercase mb-1">Total Scanned</p>
-                    <h3 class="nb-heading mb-0" style="font-size: 1.5rem;">3 REPOSITORIES</h3>
+                    <h3 class="nb-heading mb-0" style="font-size: 1.5rem;">@Model.TotalScanned REPOSITOR@(Model.TotalScanned == 1 ? "Y" : "IES")</h3>
                 </div>
                 <div class="nb-dashboard-icon-bg">📦</div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="nb-card typical-theme p-4 flex-row align-items-center justify-content-between">
+            <div class="nb-card @(Model.TotalIssues > 0 ? "typical-theme" : "rookie-theme") p-4 flex-row align-items-center justify-content-between">
                 <div>
                     <p class="nb-mono text-muted small fw-bold text-uppercase mb-1">Vulnerabilities</p>
-                    <h3 class="nb-heading mb-0 text-danger" style="font-size: 1.5rem;">8 DETECTED</h3>
+                    <h3 class="nb-heading mb-0 @(Model.TotalIssues > 0 ? "text-danger" : "text-success")" style="font-size: 1.5rem;">@Model.TotalIssues DETECTED</h3>
                 </div>
-                <div class="nb-dashboard-icon-bg text-danger">⚠️</div>
+                <div class="nb-dashboard-icon-bg @(Model.TotalIssues > 0 ? "text-danger" : "text-success")">@(Model.TotalIssues > 0 ? "⚠️" : "✅")</div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="nb-card rookie-theme p-4 flex-row align-items-center justify-content-between">
+            <div class="nb-card @gradeThemeClass p-4 flex-row align-items-center justify-content-between">
                 <div>
                     <p class="nb-mono text-muted small fw-bold text-uppercase mb-1">Security Rating</p>
-                    <h3 class="nb-heading mb-0 text-success" style="font-size: 1.5rem;">GRADE B</h3>
+                    <h3 class="nb-heading mb-0" style="font-size: 1.5rem;">GRADE @Model.OverallGrade</h3>
                 </div>
-                <div class="nb-grade-badge nb-grade-b">B</div>
+                <div class="nb-grade-badge @gradeBadgeClass">@Model.OverallGrade</div>
             </div>
         </div>
     </div>
@@ -55,7 +84,7 @@
                     <div class="fs-2 mb-3">🛡️</div>
                     <h5 class="nb-heading mb-2">RUN SECURITY CHECK</h5>
                     <p class="nb-mono text-secondary small mb-4">
-                        Perform an on-demand scan of your public GitHub repositories. Valkyrie detects dependencies for npm and NuGet, and checks code patterns for security risks in C# and Python.
+                        Perform an on-demand scan of your public GitHub repositories. CodeShield detects dependencies for npm and NuGet, and checks code patterns for security risks in C#, JavaScript, and Python.
                     </p>
                 </div>
                 <div class="d-grid mt-auto">
@@ -69,42 +98,65 @@
         <!-- Recent Scans List -->
         <div class="col-lg-6">
             <div class="nb-card p-4 h-100">
-                <h5 class="nb-heading mb-4">RECENT SCAN ACTIVITY</h5>
-                <div class="d-flex flex-column gap-3">
-                    <div class="nb-dashboard-item">
-                        <div class="d-flex align-items-center gap-3">
-                            <span class="fs-4">🐍</span>
-                            <div>
-                                <h6 class="nb-heading mb-0" style="font-size: 0.95rem;">my-python-app</h6>
-                                <span class="nb-mono text-muted" style="font-size: 0.75rem;">Scanned 2 hours ago</span>
-                            </div>
-                        </div>
-                        <span class="nb-badge nb-badge-light adventurer-theme py-1 px-3" style="font-size: 0.7rem; box-shadow: 1px 1px 0px var(--color-black);">Python only</span>
-                    </div>
-
-                    <div class="nb-dashboard-item">
-                        <div class="d-flex align-items-center gap-3">
-                            <span class="fs-4">🟢</span>
-                            <div>
-                                <h6 class="nb-heading mb-0" style="font-size: 0.95rem;">express-web-server</h6>
-                                <span class="nb-mono text-muted" style="font-size: 0.75rem;">Scanned yesterday</span>
-                            </div>
-                        </div>
-                        <span class="nb-badge rookie-theme py-1 px-3" style="font-size: 0.7rem; box-shadow: 1px 1px 0px var(--color-black);">Grade A</span>
-                    </div>
-
-                    <div class="nb-dashboard-item">
-                        <div class="d-flex align-items-center gap-3">
-                            <span class="fs-4">🔵</span>
-                            <div>
-                                <h6 class="nb-heading mb-0" style="font-size: 0.95rem;">dotnet-monolith-api</h6>
-                                <span class="nb-mono text-muted" style="font-size: 0.75rem;">Scanned 3 days ago</span>
-                            </div>
-                        </div>
-                        <span class="nb-badge typical-theme py-1 px-3" style="font-size: 0.7rem; box-shadow: 1px 1px 0px var(--color-black);">Grade D</span>
-                    </div>
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="nb-heading mb-0">RECENT SCAN ACTIVITY</h5>
+                    @if (Model.RecentScans.Any())
+                    {
+                        <a asp-controller="Scan" asp-action="History" class="nb-mono small text-decoration-none text-muted fw-bold">VIEW ALL →</a>
+                    }
                 </div>
+                
+                @if (!Model.RecentScans.Any())
+                {
+                    <div class="text-center py-4 my-auto">
+                        <span class="fs-1 d-block mb-2">🔍</span>
+                        <p class="nb-heading mb-1" style="font-size: 1rem;">NO LIVE SCANS YET</p>
+                        <p class="nb-mono text-muted small mb-3">Run your first repository scan to start monitoring security risks.</p>
+                        <a asp-controller="Scan" asp-action="Index" class="nb-btn nb-btn-primary py-1 px-3 fs-7">
+                            START SCAN NOW
+                        </a>
+                    </div>
+                }
+                else
+                {
+                    <div class="d-flex flex-column gap-3">
+                        @foreach (var scan in Model.RecentScans)
+                        {
+                            var badgeTheme = (scan.SecurityGrade?.StartsWith("A") == true || scan.SecurityGrade?.StartsWith("B") == true) ? "rookie-theme" :
+                                             (scan.SecurityGrade?.StartsWith("C") == true) ? "adventurer-theme" : "typical-theme";
+                            var icon = GetEcosystemIcon(scan.EcosystemsDetected);
+
+                            <div class="nb-dashboard-item d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center gap-3">
+                                    <span class="fs-4">@icon</span>
+                                    <div>
+                                        <h6 class="nb-heading mb-0" style="font-size: 0.95rem;">
+                                            <a asp-controller="Scan" asp-action="Details" asp-route-id="@scan.Id" class="text-dark text-decoration-none hover-primary">
+                                                @scan.RepositoryName
+                                            </a>
+                                        </h6>
+                                        <span class="nb-mono text-muted" style="font-size: 0.75rem;">Scanned @GetRelativeTime(scan.ScannedAt)</span>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="nb-badge @badgeTheme py-1 px-3" style="font-size: 0.7rem; box-shadow: 1px 1px 0px var(--color-black);">Grade @scan.SecurityGrade</span>
+                                    <a asp-controller="Scan" asp-action="Details" asp-route-id="@scan.Id" class="nb-btn nb-btn-secondary px-2 py-0 fs-7" style="box-shadow: 1px 1px 0px var(--color-black) !important;">
+                                        View
+                                    </a>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
             </div>
         </div>
     </div>
 </div>
+
+<style>
+    .hover-primary:hover {
+        color: var(--color-orange-primary) !important;
+        text-decoration: underline !important;
+    }
+</style>
+
