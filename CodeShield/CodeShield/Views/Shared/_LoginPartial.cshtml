@@ -5,8 +5,8 @@
 <ul class="navbar-nav align-items-md-center gap-2 gap-md-0">
 @if (SignInManager.IsSignedIn(User))
 {
-    <li class="nav-item">
-        <a class="nav-link nb-nav-link px-3 fw-bold" asp-controller="Dashboard" asp-action="Index" title="Dashboard">👋 @User.Identity?.Name</a>
+    <li class="nav-item d-flex align-items-center">
+        <span class="nav-link nb-nav-link px-3 text-muted fw-bold" style="cursor: default;">👤 @User.Identity?.Name</span>
     </li>
     <span class="nb-nav-divider d-none d-md-inline">|</span>
     <li class="nav-item">
