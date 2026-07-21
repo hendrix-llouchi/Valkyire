@@ -349,36 +349,43 @@ namespace CodeShield.Services
 
             string cleaned = rawResponse.Trim();
 
-            // Strip markdown code block if model wrapped JSON in it
-            if (cleaned.StartsWith("```"))
+            // Robustly extract JSON object by finding the first '{' and last '}'
+            int firstBrace = cleaned.IndexOf('{');
+            int lastBrace = cleaned.LastIndexOf('}');
+
+            if (firstBrace != -1 && lastBrace > firstBrace)
             {
-                int firstLineEnd = cleaned.IndexOf('\n');
-                if (firstLineEnd != -1)
-                {
-                    cleaned = cleaned.Substring(firstLineEnd + 1);
-                }
-                if (cleaned.EndsWith("```"))
-                {
-                    cleaned = cleaned.Substring(0, cleaned.Length - 3);
-                }
-                cleaned = cleaned.Trim();
+                cleaned = cleaned.Substring(firstBrace, lastBrace - firstBrace + 1);
             }
 
             try
             {
-                using var doc = JsonDocument.Parse(cleaned);
+                var options = new JsonDocumentOptions
+                {
+                    AllowTrailingCommas = true,
+                    CommentHandling = JsonCommentHandling.Skip
+                };
+
+                using var doc = JsonDocument.Parse(cleaned, options);
                 var root = doc.RootElement;
 
                 string? explanation = null;
-                if (root.TryGetProperty("explanation", out var expProp))
-                {
-                    explanation = expProp.GetString();
-                }
-
                 string? fix = null;
-                if (root.TryGetProperty("fix", out var fixProp))
+
+                if (root.ValueKind == JsonValueKind.Object)
                 {
-                    fix = fixProp.GetString();
+                    foreach (var prop in root.EnumerateObject())
+                    {
+                        var name = prop.Name.ToLowerInvariant();
+                        if (name.Contains("explanation") || name.Contains("risk") || name.Contains("description"))
+                        {
+                            explanation ??= prop.Value.GetString();
+                        }
+                        else if (name.Contains("fix") || name.Contains("solution") || name.Contains("remediation") || name.Contains("suggest"))
+                        {
+                            fix ??= prop.Value.GetString();
+                        }
+                    }
                 }
 
                 return (explanation, fix);
