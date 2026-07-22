@@ -38,6 +38,7 @@ Built with **ASP.NET Core (.NET 10)**, Razor Views, Entity Framework Core, and a
 ### 🤖 AI-Powered Explanations
 - Each detected vulnerability or code issue is sent to an **AgentRouter** (Anthropic-compatible) AI endpoint.
 - Returns a plain-English explanation of the risk and a concrete fix suggestion.
+- Features robust JSON extraction that parses model responses across markdown wrappers (` ```json `), formatting variations, and case-insensitive fields.
 - If the AI call times out or fails for some issues, the scan still completes — those items are shown without AI annotations rather than failing the entire scan.
 
 ### 🎨 Neo-Brutalist User Interface
