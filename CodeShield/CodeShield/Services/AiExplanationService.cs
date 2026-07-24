@@ -349,7 +349,21 @@ namespace CodeShield.Services
 
             string cleaned = rawResponse.Trim();
 
-            // Robustly extract JSON object by finding the first '{' and last '}'
+            // Strip markdown code fences if present (e.g. ```json ... ```)
+            if (cleaned.StartsWith("```"))
+            {
+                int firstLineBreak = cleaned.IndexOf('\n');
+                if (firstLineBreak != -1)
+                {
+                    cleaned = cleaned.Substring(firstLineBreak + 1);
+                }
+                if (cleaned.EndsWith("```"))
+                {
+                    cleaned = cleaned.Substring(0, cleaned.Length - 3).Trim();
+                }
+            }
+
+            // Extract content between first '{' and last '}'
             int firstBrace = cleaned.IndexOf('{');
             int lastBrace = cleaned.LastIndexOf('}');
 
@@ -358,6 +372,7 @@ namespace CodeShield.Services
                 cleaned = cleaned.Substring(firstBrace, lastBrace - firstBrace + 1);
             }
 
+            // Attempt 1: Standard JsonDocument parsing
             try
             {
                 var options = new JsonDocumentOptions
@@ -388,16 +403,68 @@ namespace CodeShield.Services
                     }
                 }
 
-                return (explanation, fix);
+                if (!string.IsNullOrWhiteSpace(explanation) || !string.IsNullOrWhiteSpace(fix))
+                {
+                    return (explanation, fix);
+                }
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(
-                    "[AI FAILURE] ContextName={ContextName} ContextId={ContextId} | Failed to parse JSON from AI response. Exception: {ExMessage} | RawContent: {RawContent}",
-                    contextName, contextId, ex.Message, rawResponse);
-                Console.WriteLine($"[AgentRouter FAIL] {contextName} ({contextId}) | JSON parse error: {ex.Message} | Raw: {rawResponse}");
-                return (null, null);
+                    "[AI PARSE] ContextName={ContextName} ContextId={ContextId} | JsonDocument.Parse failed: {ExMessage}. Attempting regex fallback...",
+                    contextName, contextId, ex.Message);
             }
+
+            // Attempt 2: Regex extraction for "explanation" and "fix"
+            try
+            {
+                string? explanation = ExtractJsonFieldRegex(cleaned, "explanation") ??
+                                     ExtractJsonFieldRegex(cleaned, "risk") ??
+                                     ExtractJsonFieldRegex(cleaned, "description");
+
+                string? fix = ExtractJsonFieldRegex(cleaned, "fix") ??
+                              ExtractJsonFieldRegex(cleaned, "solution") ??
+                              ExtractJsonFieldRegex(cleaned, "remediation");
+
+                if (!string.IsNullOrWhiteSpace(explanation) || !string.IsNullOrWhiteSpace(fix))
+                {
+                    return (explanation, fix);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    "[AI PARSE] ContextName={ContextName} ContextId={ContextId} | Regex extraction failed: {ExMessage}",
+                    contextName, contextId, ex.Message);
+            }
+
+            // Attempt 3: Raw text fallback so the user always sees the AI output
+            string fallbackText = rawResponse.Trim();
+            if (fallbackText.StartsWith("```"))
+            {
+                fallbackText = System.Text.RegularExpressions.Regex.Replace(fallbackText, @"^```[a-z]*\s*", "", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                fallbackText = System.Text.RegularExpressions.Regex.Replace(fallbackText, @"\s*```$", "", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            }
+            return (fallbackText, "Review the AI explanation above for guidance.");
+        }
+
+        private static string? ExtractJsonFieldRegex(string json, string fieldName)
+        {
+            var pattern = $@"(?i)""{fieldName}""\s*:\s*""((?:[^""\\]|\\.)*)""";
+            var match = System.Text.RegularExpressions.Regex.Match(json, pattern, System.Text.RegularExpressions.RegexOptions.Singleline);
+            if (match.Success)
+            {
+                string rawVal = match.Groups[1].Value;
+                try
+                {
+                    return System.Text.RegularExpressions.Regex.Unescape(rawVal);
+                }
+                catch
+                {
+                    return rawVal;
+                }
+            }
+            return null;
         }
     }
 }
