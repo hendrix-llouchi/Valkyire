@@ -221,14 +221,13 @@ namespace CodeShield.Controllers
                     task.SetResult(explanation, fix);
                 }
 
-                var aiTasks = tasksToExecute.Select(t => t.ExecuteAiExplanationAsync()).ToList();
-                if (aiTasks.Count > 0)
+                foreach (var aiTask in tasksToExecute)
                 {
-                    await Task.WhenAll(aiTasks);
+                    await aiTask.ExecuteAiExplanationAsync();
                 }
 
                 swAi.Stop();
-                Console.WriteLine($"[TIMING] Phase 5: Combined AI explanations took {swAi.ElapsedMilliseconds} ms for {aiTasks.Count} tasks.");
+                Console.WriteLine($"[TIMING] Phase 5: Combined AI explanations took {swAi.ElapsedMilliseconds} ms for {tasksToExecute.Count} tasks.");
 
                 // Save scan results to the database since the scan completed successfully
                 var userId = _userManager.GetUserId(User);

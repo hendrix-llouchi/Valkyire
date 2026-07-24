@@ -19,12 +19,12 @@ namespace CodeShield.Services
             _httpClient = httpClient;
             _configuration = configuration;
             _logger = logger;
-            _httpClient.Timeout = TimeSpan.FromSeconds(25);
+            _httpClient.Timeout = TimeSpan.FromSeconds(60);
         }
 
         private static readonly System.Threading.SemaphoreSlim _rateLimitSemaphore = new System.Threading.SemaphoreSlim(1, 1);
         private static DateTime _lastRequestStartTime = DateTime.MinValue;
-        private static readonly TimeSpan _minInterval = TimeSpan.FromMilliseconds(3350);
+        private static readonly TimeSpan _minInterval = TimeSpan.FromMilliseconds(1000);
 
         private async Task AcquireRateLimitSlotAsync()
         {
