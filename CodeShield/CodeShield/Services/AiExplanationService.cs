@@ -24,7 +24,7 @@ namespace CodeShield.Services
 
         private static readonly System.Threading.SemaphoreSlim _rateLimitSemaphore = new System.Threading.SemaphoreSlim(1, 1);
         private static DateTime _lastRequestStartTime = DateTime.MinValue;
-        private static readonly TimeSpan _minInterval = TimeSpan.FromMilliseconds(500);
+        private static readonly TimeSpan _minInterval = TimeSpan.FromMilliseconds(300);
 
         private async Task AcquireRateLimitSlotAsync()
         {
@@ -64,7 +64,7 @@ namespace CodeShield.Services
                               $"  \"fix\": \"Upgrade to version 1.2.3 or higher.\"\n" +
                               $"\n}}";
 
-            return await ExecuteAiRequestAsync(userContent, packageName, vulnId);
+            return await ExecuteGroqRequestAsync(userContent, packageName, vulnId);
         }
 
         public async Task<(string? Explanation, string? Fix)> ExplainCodeIssueAsync(
@@ -85,33 +85,19 @@ namespace CodeShield.Services
                               $"  \"fix\": \"Use environment variables or a configuration provider to load the password...\"\n" +
                               $"}}";
 
-            return await ExecuteAiRequestAsync(userContent, fileName, $"{issueType} @ line {lineNumber}");
-        }
-
-        private async Task<(string? Explanation, string? Fix)> ExecuteAiRequestAsync(
-            string userContent, string contextName, string contextId)
-        {
-            string? groqApiKey = _configuration["Groq:ApiKey"];
-            string? agentRouterApiKey = _configuration["AgentRouter:ApiKey"];
-
-            if (!string.IsNullOrWhiteSpace(groqApiKey))
-            {
-                return await ExecuteGroqRequestAsync(groqApiKey, userContent, contextName, contextId);
-            }
-            else if (!string.IsNullOrWhiteSpace(agentRouterApiKey))
-            {
-                return await ExecuteAgentRouterRequestAsync(agentRouterApiKey, userContent, contextName, contextId);
-            }
-            else
-            {
-                _logger.LogWarning("No AI API key found. Please configure Groq:ApiKey or AgentRouter:ApiKey.");
-                return ("AI analysis could not run: No AI API key is configured. Please set 'Groq:ApiKey' in Azure Configuration or dotnet user-secrets.", null);
-            }
+            return await ExecuteGroqRequestAsync(userContent, fileName, $"{issueType} @ line {lineNumber}");
         }
 
         private async Task<(string? Explanation, string? Fix)> ExecuteGroqRequestAsync(
-            string apiKey, string userContent, string contextName, string contextId)
+            string userContent, string contextName, string contextId)
         {
+            string? apiKey = _configuration["Groq:ApiKey"];
+            if (string.IsNullOrWhiteSpace(apiKey))
+            {
+                _logger.LogWarning("Groq API Key is missing. Please set 'Groq:ApiKey' in configuration or 'Groq__ApiKey' in Azure Environment Variables.");
+                return ("AI analysis could not run: Groq API key is missing. Please add 'Groq__ApiKey' in your Azure App Settings.", null);
+            }
+
             var requestUri = "https://api.groq.com/openai/v1/chat/completions";
 
             var payloadObj = new
@@ -183,102 +169,12 @@ namespace CodeShield.Services
                         }
                     }
 
-                    return ("AI analysis failed: Groq API returned an unexpected structure.", null);
+                    return ("AI analysis failed: Groq API returned an unexpected response structure.", null);
                 }
                 catch (JsonException)
                 {
                     string snippet = responseJson != null ? responseJson[..Math.Min(responseJson.Length, 150)] : "null";
                     return ($"AI analysis failed: Invalid JSON response from Groq. Snippet: {snippet}", null);
-                }
-                catch (Exception ex) when (IsTransientException(ex) && attempt < maxAttempts)
-                {
-                    await Task.Delay(TimeSpan.FromSeconds(2));
-                }
-                catch (Exception ex)
-                {
-                    return ($"AI analysis failed due to a network error ({ex.GetType().Name}).", null);
-                }
-            }
-
-            return ("AI analysis failed after all retry attempts.", null);
-        }
-
-        private async Task<(string? Explanation, string? Fix)> ExecuteAgentRouterRequestAsync(
-            string apiKey, string userContent, string contextName, string contextId)
-        {
-            var requestUri = "https://agentrouter.org/v1/messages";
-
-            var payloadObj = new
-            {
-                model = "claude-opus-4-6",
-                max_tokens = 1024,
-                system = "You are a security assistant. You must respond ONLY with a raw JSON object containing the keys 'explanation' and 'fix'. Do not include markdown formatting, backticks, or any other wrapper.",
-                messages = new[]
-                {
-                    new { role = "user", content = userContent }
-                }
-            };
-
-            string requestJson = JsonSerializer.Serialize(payloadObj);
-
-            int maxAttempts = 3;
-            for (int attempt = 1; attempt <= maxAttempts; attempt++)
-            {
-                string? responseJson = null;
-                try
-                {
-                    await AcquireRateLimitSlotAsync();
-
-                    using var request = new HttpRequestMessage(HttpMethod.Post, requestUri);
-                    request.Headers.Add("x-api-key", apiKey);
-                    request.Headers.Add("anthropic-version", "2023-06-01");
-                    request.Headers.Add("x-app-name", "cli");
-                    request.Headers.TryAddWithoutValidation("User-Agent", "anthropic-node/0.24.3");
-                    request.Headers.TryAddWithoutValidation("Accept", "application/json");
-                    request.Headers.TryAddWithoutValidation("X-Forwarded-For", "71.246.211.53");
-                    request.Headers.TryAddWithoutValidation("X-Real-IP", "71.246.211.53");
-                    request.Content = new StringContent(requestJson, Encoding.UTF8, "application/json");
-
-                    using var response = await _httpClient.SendAsync(request);
-
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        string rawResponse = await response.Content.ReadAsStringAsync();
-                        int statusCode = (int)response.StatusCode;
-
-                        bool isTransient = statusCode == 429 || statusCode == 500 || statusCode == 502 || statusCode == 503 || statusCode == 504;
-
-                        if (isTransient && attempt < maxAttempts)
-                        {
-                            await Task.Delay(TimeSpan.FromSeconds(2));
-                            continue;
-                        }
-
-                        return ($"AI analysis failed: the AI service returned HTTP {statusCode}.", null);
-                    }
-
-                    responseJson = await response.Content.ReadAsStringAsync();
-
-                    using var doc = JsonDocument.Parse(responseJson);
-                    var root = doc.RootElement;
-                    if (root.TryGetProperty("content", out var contentArray) &&
-                        contentArray.ValueKind == JsonValueKind.Array &&
-                        contentArray.GetArrayLength() > 0)
-                    {
-                        var firstContent = contentArray[0];
-                        if (firstContent.TryGetProperty("text", out var textProp))
-                        {
-                            string text = textProp.GetString() ?? "";
-                            return ParseJsonResponse(text, contextName, contextId);
-                        }
-                    }
-
-                    return ("AI analysis failed: AgentRouter returned an unexpected response format.", null);
-                }
-                catch (JsonException)
-                {
-                    string snippet = responseJson != null ? responseJson[..Math.Min(responseJson.Length, 150)] : "null";
-                    return ($"AI analysis failed: AgentRouter returned an invalid JSON response. Snippet: {snippet}", null);
                 }
                 catch (Exception ex) when (IsTransientException(ex) && attempt < maxAttempts)
                 {
