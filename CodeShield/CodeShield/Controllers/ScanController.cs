@@ -221,13 +221,55 @@ namespace CodeShield.Controllers
                     task.SetResult(explanation, fix);
                 }
 
+                int aiSuccessCount = 0;
+                int aiFailCount = 0;
                 foreach (var aiTask in tasksToExecute)
                 {
-                    await aiTask.ExecuteAiExplanationAsync();
+                    try
+                    {
+                        await aiTask.ExecuteAiExplanationAsync();
+                        // Check if AI explanation was actually populated after the task ran
+                        Console.WriteLine($"[AI DEBUG] Task completed for {aiTask.TypeName} ({aiTask.IssueKey})");
+                    }
+                    catch (Exception aiEx)
+                    {
+                        Console.WriteLine($"[AI ERROR] Exception during AI task {aiTask.TypeName} ({aiTask.IssueKey}): {aiEx.GetType().Name}: {aiEx.Message}");
+                    }
+                }
+
+                // Log the actual state of AI explanations after all tasks complete
+                if (model.CodeIssues != null)
+                {
+                    foreach (var ci in model.CodeIssues)
+                    {
+                        bool hasExplanation = !string.IsNullOrEmpty(ci.AiExplanation);
+                        bool hasFix = !string.IsNullOrEmpty(ci.AiFixSuggestion);
+                        if (hasExplanation || hasFix)
+                            aiSuccessCount++;
+                        else
+                            aiFailCount++;
+                        Console.WriteLine($"[AI RESULT] CodeIssue {ci.IssueType} @ {ci.FileName}:{ci.LineNumber} | Explanation={hasExplanation} (len={ci.AiExplanation?.Length ?? 0}) | Fix={hasFix} (len={ci.AiFixSuggestion?.Length ?? 0})");
+                    }
+                }
+                if (packages != null)
+                {
+                    foreach (var pkg in packages.Where(p => p.Ecosystem != Ecosystem.Python))
+                    {
+                        foreach (var v in pkg.Vulnerabilities)
+                        {
+                            bool hasExplanation = !string.IsNullOrEmpty(v.AiExplanation);
+                            bool hasFix = !string.IsNullOrEmpty(v.AiFixSuggestion);
+                            if (hasExplanation || hasFix)
+                                aiSuccessCount++;
+                            else
+                                aiFailCount++;
+                            Console.WriteLine($"[AI RESULT] Vulnerability {v.Id} on {pkg.PackageName}@{pkg.Version} | Explanation={hasExplanation} (len={v.AiExplanation?.Length ?? 0}) | Fix={hasFix} (len={v.AiFixSuggestion?.Length ?? 0})");
+                        }
+                    }
                 }
 
                 swAi.Stop();
-                Console.WriteLine($"[TIMING] Phase 5: Combined AI explanations took {swAi.ElapsedMilliseconds} ms for {tasksToExecute.Count} tasks.");
+                Console.WriteLine($"[TIMING] Phase 5: Combined AI explanations took {swAi.ElapsedMilliseconds} ms for {tasksToExecute.Count} tasks. Success={aiSuccessCount}, Failed={aiFailCount}");
 
                 // Save scan results to the database since the scan completed successfully
                 var userId = _userManager.GetUserId(User);
