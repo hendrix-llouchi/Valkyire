@@ -91,11 +91,11 @@ namespace CodeShield.Services
         private async Task<(string? Explanation, string? Fix)> ExecuteGroqRequestAsync(
             string userContent, string contextName, string contextId)
         {
-            string? apiKey = _configuration["Groq:ApiKey"];
+            string? apiKey = _configuration["Groq:ApiKey"] ?? _configuration["Grok:ApiKey"];
             if (string.IsNullOrWhiteSpace(apiKey))
             {
-                _logger.LogWarning("Groq API Key is missing. Please set 'Groq:ApiKey' in configuration or 'Groq__ApiKey' in Azure Environment Variables.");
-                return ("AI analysis could not run: Groq API key is missing. Please add 'Groq__ApiKey' in your Azure App Settings.", null);
+                _logger.LogWarning("Groq/Grok API Key is missing. Please set 'Groq:ApiKey' or 'Grok:ApiKey' in configuration.");
+                return ("AI analysis could not run: Groq API key is missing. Please add 'Groq__ApiKey' or 'Grok__ApiKey' in your Azure App Settings.", null);
             }
 
             var requestUri = "https://api.groq.com/openai/v1/chat/completions";
