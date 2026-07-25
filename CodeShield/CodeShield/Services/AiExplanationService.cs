@@ -24,7 +24,7 @@ namespace CodeShield.Services
 
         private static readonly System.Threading.SemaphoreSlim _rateLimitSemaphore = new System.Threading.SemaphoreSlim(1, 1);
         private static DateTime _lastRequestStartTime = DateTime.MinValue;
-        private static readonly TimeSpan _minInterval = TimeSpan.FromMilliseconds(1000);
+        private static readonly TimeSpan _minInterval = TimeSpan.FromMilliseconds(500);
 
         private async Task AcquireRateLimitSlotAsync()
         {
@@ -36,7 +36,6 @@ namespace CodeShield.Services
                 if (timeSinceLast < _minInterval)
                 {
                     var delay = _minInterval - timeSinceLast;
-                    _logger.LogInformation("[AI RATE LIMIT] Pacing request. Delaying for {DelayMs:F0} ms to respect 18 req/min limit.", delay.TotalMilliseconds);
                     await Task.Delay(delay);
                 }
                 _lastRequestStartTime = DateTime.UtcNow;
@@ -50,16 +49,6 @@ namespace CodeShield.Services
         public async Task<(string? Explanation, string? Fix)> ExplainVulnerabilityAsync(
             string packageName, string version, string vulnId, string description)
         {
-            string? apiKey = _configuration["AgentRouter:ApiKey"];
-            if (string.IsNullOrWhiteSpace(apiKey))
-            {
-                _logger.LogWarning("AgentRouter API Key is missing. Please set 'AgentRouter:ApiKey' in your configuration (e.g., .NET User Secrets).");
-                return ("AI analysis could not run: the AgentRouter API key is not configured. Please set 'AgentRouter:ApiKey' via dotnet user-secrets.", null);
-            }
-
-            var requestUri = "https://agentrouter.org/v1/messages";
-
-            // Build user prompt
             var userContent = $"Explain the following vulnerability:\n" +
                               $"Package: {packageName}\n" +
                               $"Version: {version}\n" +
@@ -75,151 +64,12 @@ namespace CodeShield.Services
                               $"  \"fix\": \"Upgrade to version 1.2.3 or higher.\"\n" +
                               $"\n}}";
 
-            var payloadObj = new
-            {
-                model = "claude-opus-4-6",
-                max_tokens = 1024,
-                system = "You are a security assistant. You must respond ONLY with a raw JSON object containing the keys 'explanation' and 'fix'. Do not include markdown formatting, backticks, or any other wrapper.",
-                messages = new[]
-                {
-                    new { role = "user", content = userContent }
-                }
-            };
-
-            string requestJson = JsonSerializer.Serialize(payloadObj);
-
-            int maxAttempts = 3;
-            for (int attempt = 1; attempt <= maxAttempts; attempt++)
-            {
-                string? responseJson = null;
-                try
-                {
-                    await AcquireRateLimitSlotAsync();
-
-                    using var request = new HttpRequestMessage(HttpMethod.Post, requestUri);
-                    request.Headers.Add("x-api-key", apiKey);
-                    request.Headers.Add("anthropic-version", "2023-06-01");
-                    request.Headers.Add("x-app-name", "cli");
-                    request.Headers.TryAddWithoutValidation("User-Agent", "anthropic-node/0.24.3");
-                    request.Headers.TryAddWithoutValidation("Accept", "application/json");
-                    request.Headers.TryAddWithoutValidation("X-Forwarded-For", "71.246.211.53");
-                    request.Headers.TryAddWithoutValidation("X-Real-IP", "71.246.211.53");
-                    request.Content = new StringContent(requestJson, Encoding.UTF8, "application/json");
-
-                    using var response = await _httpClient.SendAsync(request);
-                    Console.WriteLine($"[AI DIAG] Vuln API response status: {(int)response.StatusCode} for {packageName}@{version} ({vulnId})");
-
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        string rawResponse = await response.Content.ReadAsStringAsync();
-                        int statusCode = (int)response.StatusCode;
-                        Console.WriteLine($"[AI DIAG] Vuln API FAILURE body (first 500 chars): {rawResponse[..Math.Min(rawResponse.Length, 500)]}");
-
-                        bool isTransient = statusCode == 429 || statusCode == 500 || statusCode == 502 || statusCode == 503 || statusCode == 504;
-
-                        if (isTransient && attempt < maxAttempts)
-                        {
-                            double delay = Math.Min(8.0, Math.Pow(2, attempt) * (0.9 + Random.Shared.NextDouble() * 0.2));
-                            _logger.LogWarning(
-                                "[AI RETRY] Package={Package} VulnId={VulnId} | Transient HTTP {StatusCode} on attempt {Attempt}/{MaxAttempts}. Retrying in {Delay:F2}s...",
-                                packageName, vulnId, statusCode, attempt, maxAttempts, delay);
-                            await Task.Delay(TimeSpan.FromSeconds(delay));
-                            continue;
-                        }
-
-                        _logger.LogError(
-                            "[AI FAILURE] Package={Package} Version={Version} VulnId={VulnId} | HTTP {StatusCode} | Body: {Body}",
-                            packageName, version, vulnId, statusCode, rawResponse);
-                        Console.WriteLine($"[AgentRouter FAIL] {packageName}@{version} ({vulnId}) | Status: {statusCode} | Body: {rawResponse}");
-                        return ($"AI analysis failed: the AI service returned HTTP {statusCode}. This is typically a temporary issue — try rescanning.", null);
-                    }
-
-                    responseJson = await response.Content.ReadAsStringAsync();
-                    Console.WriteLine($"[AI DIAG] Vuln API raw response (first 300 chars): {responseJson[..Math.Min(responseJson.Length, 300)]}");
-
-                    using var doc = JsonDocument.Parse(responseJson);
-                    var root = doc.RootElement;
-                    if (root.TryGetProperty("content", out var contentArray) &&
-                        contentArray.ValueKind == JsonValueKind.Array &&
-                        contentArray.GetArrayLength() > 0)
-                    {
-                        var firstContent = contentArray[0];
-                        if (firstContent.TryGetProperty("text", out var textProp))
-                        {
-                            string text = textProp.GetString() ?? "";
-                            Console.WriteLine($"[AI DIAG] Vuln extracted text (first 300 chars): {text[..Math.Min(text.Length, 300)]}");
-                            var result = ParseJsonResponse(text, packageName, vulnId);
-                            Console.WriteLine($"[AI DIAG] Vuln parsed result: Explanation={result.Explanation?.Length ?? -1} chars, Fix={result.Fix?.Length ?? -1} chars");
-                            return result;
-                        }
-                    }
-
-                    _logger.LogWarning(
-                        "[AI FAILURE] Package={Package} Version={Version} VulnId={VulnId} | Unexpected response format. Response: {Response}",
-                        packageName, version, vulnId, responseJson);
-                    Console.WriteLine($"[AI DIAG] Vuln UNEXPECTED FORMAT for {packageName}@{version} ({vulnId})");
-                    return ("AI analysis failed: the AI service returned an unexpected response format. Try rescanning.", null);
-                }
-                catch (TaskCanceledException) when (attempt < maxAttempts)
-                {
-                    double delay = Math.Min(8.0, Math.Pow(2, attempt) * (0.9 + Random.Shared.NextDouble() * 0.2));
-                    _logger.LogWarning(
-                        "[AI RETRY] Package={Package} VulnId={VulnId} | Timeout (TaskCanceledException) on attempt {Attempt}/{MaxAttempts}. Retrying in {Delay:F2}s...",
-                        packageName, vulnId, attempt, maxAttempts, delay);
-                    await Task.Delay(TimeSpan.FromSeconds(delay));
-                }
-                catch (TaskCanceledException tcEx)
-                {
-                    string reason = tcEx.CancellationToken.IsCancellationRequested ? "cancelled" : "timed out";
-                    _logger.LogError(
-                        "[AI FAILURE] Package={Package} Version={Version} VulnId={VulnId} | Request {Reason} (TaskCanceledException). Message: {Message}",
-                        packageName, version, vulnId, reason, tcEx.Message);
-                    Console.WriteLine($"[AgentRouter FAIL] {packageName}@{version} ({vulnId}) | Request {reason} | {tcEx.Message}");
-                    return ($"AI analysis failed: the request to the AI service {reason} after 3 attempts. The service may be slow or unavailable — try rescanning.", null);
-                }
-                catch (Exception ex) when (IsTransientException(ex) && attempt < maxAttempts)
-                {
-                    double delay = Math.Min(8.0, Math.Pow(2, attempt) * (0.9 + Random.Shared.NextDouble() * 0.2));
-                    string exTypeName = ex.GetType().Name;
-                    _logger.LogWarning(
-                        "[AI RETRY] Package={Package} VulnId={VulnId} | Transient Exception {ExType} ({ExMessage}) on attempt {Attempt}/{MaxAttempts}. Retrying in {Delay:F2}s...",
-                        packageName, vulnId, exTypeName, ex.Message, attempt, maxAttempts, delay);
-                    await Task.Delay(TimeSpan.FromSeconds(delay));
-                }
-                catch (JsonException ex)
-                {
-                    _logger.LogError(
-                        "[AI FAILURE] Package={Package} Version={Version} VulnId={VulnId} | Invalid JSON: {Message} | Response: {Response}",
-                        packageName, version, vulnId, ex.Message, responseJson);
-                    string snippet = responseJson != null ? responseJson[..Math.Min(responseJson.Length, 150)] : "null";
-                    return ($"AI analysis failed: The AI service returned an invalid JSON response (likely an error page). Snippet: {snippet}", null);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(
-                        "[AI FAILURE] Package={Package} Version={Version} VulnId={VulnId} | Exception type={ExType} | Message: {Message}",
-                        packageName, version, vulnId, ex.GetType().Name, ex.Message);
-                    Console.WriteLine($"[AgentRouter FAIL] {packageName}@{version} ({vulnId}) | {ex.GetType().Name}: {ex.Message}");
-                    return ($"AI analysis failed due to a network error ({ex.GetType().Name}). Check your internet connection and try rescanning.", null);
-                }
-            }
-
-            return ("AI analysis failed after all retry attempts. The AI service may be temporarily unavailable — try rescanning.", null);
+            return await ExecuteAiRequestAsync(userContent, packageName, vulnId);
         }
 
         public async Task<(string? Explanation, string? Fix)> ExplainCodeIssueAsync(
             string fileName, int lineNumber, string issueType, string codeSnippet)
         {
-            string? apiKey = _configuration["AgentRouter:ApiKey"];
-            if (string.IsNullOrWhiteSpace(apiKey))
-            {
-                _logger.LogWarning("AgentRouter API Key is missing. Please set 'AgentRouter:ApiKey' in your configuration (e.g., .NET User Secrets).");
-                return ("AI analysis could not run: the AgentRouter API key is not configured. Please set 'AgentRouter:ApiKey' via dotnet user-secrets.", null);
-            }
-
-            var requestUri = "https://agentrouter.org/v1/messages";
-
-            // Build user prompt
             var userContent = $"Explain the following code security issue:\n" +
                               $"File: {fileName}\n" +
                               $"Line: {lineNumber}\n" +
@@ -235,6 +85,129 @@ namespace CodeShield.Services
                               $"  \"fix\": \"Use environment variables or a configuration provider to load the password...\"\n" +
                               $"}}";
 
+            return await ExecuteAiRequestAsync(userContent, fileName, $"{issueType} @ line {lineNumber}");
+        }
+
+        private async Task<(string? Explanation, string? Fix)> ExecuteAiRequestAsync(
+            string userContent, string contextName, string contextId)
+        {
+            string? groqApiKey = _configuration["Groq:ApiKey"];
+            string? agentRouterApiKey = _configuration["AgentRouter:ApiKey"];
+
+            if (!string.IsNullOrWhiteSpace(groqApiKey))
+            {
+                return await ExecuteGroqRequestAsync(groqApiKey, userContent, contextName, contextId);
+            }
+            else if (!string.IsNullOrWhiteSpace(agentRouterApiKey))
+            {
+                return await ExecuteAgentRouterRequestAsync(agentRouterApiKey, userContent, contextName, contextId);
+            }
+            else
+            {
+                _logger.LogWarning("No AI API key found. Please configure Groq:ApiKey or AgentRouter:ApiKey.");
+                return ("AI analysis could not run: No AI API key is configured. Please set 'Groq:ApiKey' in Azure Configuration or dotnet user-secrets.", null);
+            }
+        }
+
+        private async Task<(string? Explanation, string? Fix)> ExecuteGroqRequestAsync(
+            string apiKey, string userContent, string contextName, string contextId)
+        {
+            var requestUri = "https://api.groq.com/openai/v1/chat/completions";
+
+            var payloadObj = new
+            {
+                model = "llama-3.3-70b-versatile",
+                temperature = 0.2,
+                response_format = new { type = "json_object" },
+                messages = new[]
+                {
+                    new { role = "system", content = "You are a security assistant. You must respond ONLY with a raw JSON object containing the keys 'explanation' and 'fix'. Do not include markdown formatting, backticks, or any other wrapper." },
+                    new { role = "user", content = userContent }
+                }
+            };
+
+            string requestJson = JsonSerializer.Serialize(payloadObj);
+
+            int maxAttempts = 3;
+            for (int attempt = 1; attempt <= maxAttempts; attempt++)
+            {
+                string? responseJson = null;
+                try
+                {
+                    await AcquireRateLimitSlotAsync();
+
+                    using var request = new HttpRequestMessage(HttpMethod.Post, requestUri);
+                    request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
+                    request.Content = new StringContent(requestJson, Encoding.UTF8, "application/json");
+
+                    using var response = await _httpClient.SendAsync(request);
+                    Console.WriteLine($"[AI DIAG - Groq] Status: {(int)response.StatusCode} for {contextName} ({contextId})");
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        string rawResponse = await response.Content.ReadAsStringAsync();
+                        int statusCode = (int)response.StatusCode;
+                        Console.WriteLine($"[Groq FAIL] Status: {statusCode} | Body: {rawResponse}");
+
+                        bool isTransient = statusCode == 429 || statusCode == 500 || statusCode == 502 || statusCode == 503 || statusCode == 504;
+
+                        if (isTransient && attempt < maxAttempts)
+                        {
+                            double delay = Math.Min(4.0, Math.Pow(2, attempt));
+                            await Task.Delay(TimeSpan.FromSeconds(delay));
+                            continue;
+                        }
+
+                        return ($"AI analysis failed: Groq API returned HTTP {statusCode}. Message: {rawResponse[..Math.Min(rawResponse.Length, 150)]}", null);
+                    }
+
+                    responseJson = await response.Content.ReadAsStringAsync();
+
+                    using var doc = JsonDocument.Parse(responseJson);
+                    var root = doc.RootElement;
+
+                    if (root.TryGetProperty("choices", out var choices) &&
+                        choices.ValueKind == JsonValueKind.Array &&
+                        choices.GetArrayLength() > 0)
+                    {
+                        var firstChoice = choices[0];
+                        if (firstChoice.TryGetProperty("message", out var messageObj) &&
+                            messageObj.TryGetProperty("content", out var contentProp))
+                        {
+                            string text = contentProp.GetString() ?? "";
+                            var result = ParseJsonResponse(text, contextName, contextId);
+                            if (!string.IsNullOrWhiteSpace(result.Explanation))
+                            {
+                                return result;
+                            }
+                        }
+                    }
+
+                    return ("AI analysis failed: Groq API returned an unexpected structure.", null);
+                }
+                catch (JsonException)
+                {
+                    string snippet = responseJson != null ? responseJson[..Math.Min(responseJson.Length, 150)] : "null";
+                    return ($"AI analysis failed: Invalid JSON response from Groq. Snippet: {snippet}", null);
+                }
+                catch (Exception ex) when (IsTransientException(ex) && attempt < maxAttempts)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(2));
+                }
+                catch (Exception ex)
+                {
+                    return ($"AI analysis failed due to a network error ({ex.GetType().Name}).", null);
+                }
+            }
+
+            return ("AI analysis failed after all retry attempts.", null);
+        }
+
+        private async Task<(string? Explanation, string? Fix)> ExecuteAgentRouterRequestAsync(
+            string apiKey, string userContent, string contextName, string contextId)
+        {
+            var requestUri = "https://agentrouter.org/v1/messages";
+
             var payloadObj = new
             {
                 model = "claude-opus-4-6",
@@ -267,35 +240,24 @@ namespace CodeShield.Services
                     request.Content = new StringContent(requestJson, Encoding.UTF8, "application/json");
 
                     using var response = await _httpClient.SendAsync(request);
-                    Console.WriteLine($"[AI DIAG] Code API response status: {(int)response.StatusCode} for {fileName}:{lineNumber} ({issueType})");
 
                     if (!response.IsSuccessStatusCode)
                     {
                         string rawResponse = await response.Content.ReadAsStringAsync();
                         int statusCode = (int)response.StatusCode;
-                        Console.WriteLine($"[AI DIAG] Code API FAILURE body (first 500 chars): {rawResponse[..Math.Min(rawResponse.Length, 500)]}");
 
                         bool isTransient = statusCode == 429 || statusCode == 500 || statusCode == 502 || statusCode == 503 || statusCode == 504;
 
                         if (isTransient && attempt < maxAttempts)
                         {
-                            double delay = Math.Min(8.0, Math.Pow(2, attempt) * (0.9 + Random.Shared.NextDouble() * 0.2));
-                            _logger.LogWarning(
-                                "[AI RETRY] File={File} Line={Line} IssueType={IssueType} | Transient HTTP {StatusCode} on attempt {Attempt}/{MaxAttempts}. Retrying in {Delay:F2}s...",
-                                fileName, lineNumber, issueType, statusCode, attempt, maxAttempts, delay);
-                            await Task.Delay(TimeSpan.FromSeconds(delay));
+                            await Task.Delay(TimeSpan.FromSeconds(2));
                             continue;
                         }
 
-                        _logger.LogError(
-                            "[AI FAILURE] File={File} Line={Line} IssueType={IssueType} | HTTP {StatusCode} | Body: {Body}",
-                            fileName, lineNumber, issueType, statusCode, rawResponse);
-                        Console.WriteLine($"[AgentRouter FAIL] {fileName}:{lineNumber} ({issueType}) | Status: {statusCode} | Body: {rawResponse}");
-                        return ($"AI analysis failed: the AI service returned HTTP {statusCode}. This is typically a temporary issue — try rescanning.", null);
+                        return ($"AI analysis failed: the AI service returned HTTP {statusCode}.", null);
                     }
 
                     responseJson = await response.Content.ReadAsStringAsync();
-                    Console.WriteLine($"[AI DIAG] Code API raw response (first 300 chars): {responseJson[..Math.Min(responseJson.Length, 300)]}");
 
                     using var doc = JsonDocument.Parse(responseJson);
                     var root = doc.RootElement;
@@ -307,64 +269,28 @@ namespace CodeShield.Services
                         if (firstContent.TryGetProperty("text", out var textProp))
                         {
                             string text = textProp.GetString() ?? "";
-                            Console.WriteLine($"[AI DIAG] Code extracted text (first 300 chars): {text[..Math.Min(text.Length, 300)]}");
-                            var result = ParseJsonResponse(text, fileName, $"{issueType} @ line {lineNumber}");
-                            Console.WriteLine($"[AI DIAG] Code parsed result: Explanation={result.Explanation?.Length ?? -1} chars, Fix={result.Fix?.Length ?? -1} chars");
-                            return result;
+                            return ParseJsonResponse(text, contextName, contextId);
                         }
                     }
 
-                    _logger.LogWarning(
-                        "[AI FAILURE] File={File} Line={Line} IssueType={IssueType} | Unexpected response format. Response: {Response}",
-                        fileName, lineNumber, issueType, responseJson);
-                    Console.WriteLine($"[AI DIAG] Code UNEXPECTED FORMAT for {fileName}:{lineNumber} ({issueType})");
-                    return ("AI analysis failed: the AI service returned an unexpected response format. Try rescanning.", null);
+                    return ("AI analysis failed: AgentRouter returned an unexpected response format.", null);
                 }
-                catch (TaskCanceledException) when (attempt < maxAttempts)
+                catch (JsonException)
                 {
-                    double delay = Math.Min(8.0, Math.Pow(2, attempt) * (0.9 + Random.Shared.NextDouble() * 0.2));
-                    _logger.LogWarning(
-                        "[AI RETRY] File={File} Line={Line} IssueType={IssueType} | Timeout (TaskCanceledException) on attempt {Attempt}/{MaxAttempts}. Retrying in {Delay:F2}s...",
-                        fileName, lineNumber, issueType, attempt, maxAttempts, delay);
-                    await Task.Delay(TimeSpan.FromSeconds(delay));
-                }
-                catch (TaskCanceledException tcEx)
-                {
-                    string reason = tcEx.CancellationToken.IsCancellationRequested ? "cancelled" : "timed out";
-                    _logger.LogError(
-                        "[AI FAILURE] File={File} Line={Line} IssueType={IssueType} | Request {Reason} (TaskCanceledException). Message: {Message}",
-                        fileName, lineNumber, issueType, reason, tcEx.Message);
-                    Console.WriteLine($"[AgentRouter FAIL] {fileName}:{lineNumber} ({issueType}) | Request {reason} | {tcEx.Message}");
-                    return ($"AI analysis failed: the request to the AI service {reason} after 3 attempts. The service may be slow or unavailable — try rescanning.", null);
+                    string snippet = responseJson != null ? responseJson[..Math.Min(responseJson.Length, 150)] : "null";
+                    return ($"AI analysis failed: AgentRouter returned an invalid JSON response. Snippet: {snippet}", null);
                 }
                 catch (Exception ex) when (IsTransientException(ex) && attempt < maxAttempts)
                 {
-                    double delay = Math.Min(8.0, Math.Pow(2, attempt) * (0.9 + Random.Shared.NextDouble() * 0.2));
-                    string exTypeName = ex.GetType().Name;
-                    _logger.LogWarning(
-                        "[AI RETRY] File={File} Line={Line} IssueType={IssueType} | Transient Exception {ExType} ({ExMessage}) on attempt {Attempt}/{MaxAttempts}. Retrying in {Delay:F2}s...",
-                        fileName, lineNumber, issueType, exTypeName, ex.Message, attempt, maxAttempts, delay);
-                    await Task.Delay(TimeSpan.FromSeconds(delay));
-                }
-                catch (JsonException ex)
-                {
-                    _logger.LogError(
-                        "[AI FAILURE] File={File} Line={Line} IssueType={IssueType} | Invalid JSON: {Message} | Response: {Response}",
-                        fileName, lineNumber, issueType, ex.Message, responseJson);
-                    string snippet = responseJson != null ? responseJson[..Math.Min(responseJson.Length, 150)] : "null";
-                    return ($"AI analysis failed: The AI service returned an invalid JSON response (likely an error page). Snippet: {snippet}", null);
+                    await Task.Delay(TimeSpan.FromSeconds(2));
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(
-                        "[AI FAILURE] File={File} Line={Line} IssueType={IssueType} | Exception type={ExType} | Message: {Message}",
-                        fileName, lineNumber, issueType, ex.GetType().Name, ex.Message);
-                    Console.WriteLine($"[AgentRouter FAIL] {fileName}:{lineNumber} ({issueType}) | {ex.GetType().Name}: {ex.Message}");
-                    return ($"AI analysis failed due to a network error ({ex.GetType().Name}). Check your internet connection and try rescanning.", null);
+                    return ($"AI analysis failed due to a network error ({ex.GetType().Name}).", null);
                 }
             }
 
-            return ("AI analysis failed after all retry attempts. The AI service may be temporarily unavailable — try rescanning.", null);
+            return ("AI analysis failed after all retry attempts.", null);
         }
 
         private static bool IsTransientException(Exception ex)
@@ -387,7 +313,6 @@ namespace CodeShield.Services
 
             string cleaned = rawResponse.Trim();
 
-            // Strip markdown code fences if present (e.g. ```json ... ```)
             if (cleaned.StartsWith("```"))
             {
                 int firstLineBreak = cleaned.IndexOf('\n');
@@ -401,7 +326,6 @@ namespace CodeShield.Services
                 }
             }
 
-            // Extract content between first '{' and last '}'
             int firstBrace = cleaned.IndexOf('{');
             int lastBrace = cleaned.LastIndexOf('}');
 
@@ -410,7 +334,6 @@ namespace CodeShield.Services
                 cleaned = cleaned.Substring(firstBrace, lastBrace - firstBrace + 1);
             }
 
-            // Attempt 1: Standard JsonDocument parsing
             try
             {
                 var options = new JsonDocumentOptions
@@ -448,61 +371,10 @@ namespace CodeShield.Services
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(
-                    "[AI PARSE] ContextName={ContextName} ContextId={ContextId} | JsonDocument.Parse failed: {ExMessage}. Attempting regex fallback...",
-                    contextName, contextId, ex.Message);
+                _logger.LogWarning(ex, "[AI PARSE WARNING] Failed to parse JSON for {ContextName} ({ContextId}). Raw text: {RawText}", contextName, contextId, cleaned);
             }
 
-            // Attempt 2: Regex extraction for "explanation" and "fix"
-            try
-            {
-                string? explanation = ExtractJsonFieldRegex(cleaned, "explanation") ??
-                                     ExtractJsonFieldRegex(cleaned, "risk") ??
-                                     ExtractJsonFieldRegex(cleaned, "description");
-
-                string? fix = ExtractJsonFieldRegex(cleaned, "fix") ??
-                              ExtractJsonFieldRegex(cleaned, "solution") ??
-                              ExtractJsonFieldRegex(cleaned, "remediation");
-
-                if (!string.IsNullOrWhiteSpace(explanation) || !string.IsNullOrWhiteSpace(fix))
-                {
-                    return (explanation, fix);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(
-                    "[AI PARSE] ContextName={ContextName} ContextId={ContextId} | Regex extraction failed: {ExMessage}",
-                    contextName, contextId, ex.Message);
-            }
-
-            // Attempt 3: Raw text fallback so the user always sees the AI output
-            string fallbackText = rawResponse.Trim();
-            if (fallbackText.StartsWith("```"))
-            {
-                fallbackText = System.Text.RegularExpressions.Regex.Replace(fallbackText, @"^```[a-z]*\s*", "", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-                fallbackText = System.Text.RegularExpressions.Regex.Replace(fallbackText, @"\s*```$", "", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-            }
-            return (fallbackText, "Review the AI explanation above for guidance.");
-        }
-
-        private static string? ExtractJsonFieldRegex(string json, string fieldName)
-        {
-            var pattern = $@"(?i)""{fieldName}""\s*:\s*""((?:[^""\\]|\\.)*)""";
-            var match = System.Text.RegularExpressions.Regex.Match(json, pattern, System.Text.RegularExpressions.RegexOptions.Singleline);
-            if (match.Success)
-            {
-                string rawVal = match.Groups[1].Value;
-                try
-                {
-                    return System.Text.RegularExpressions.Regex.Unescape(rawVal);
-                }
-                catch
-                {
-                    return rawVal;
-                }
-            }
-            return null;
+            return (cleaned, null);
         }
     }
 }
