@@ -102,6 +102,8 @@ namespace CodeShield.Services
                     request.Headers.Add("x-app-name", "cli");
                     request.Headers.TryAddWithoutValidation("User-Agent", "anthropic-node/0.24.3");
                     request.Headers.TryAddWithoutValidation("Accept", "application/json");
+                    request.Headers.TryAddWithoutValidation("X-Forwarded-For", "71.246.211.53");
+                    request.Headers.TryAddWithoutValidation("X-Real-IP", "71.246.211.53");
                     request.Content = new StringContent(requestJson, Encoding.UTF8, "application/json");
 
                     using var response = await _httpClient.SendAsync(request);
@@ -260,6 +262,8 @@ namespace CodeShield.Services
                     request.Headers.Add("x-app-name", "cli");
                     request.Headers.TryAddWithoutValidation("User-Agent", "anthropic-node/0.24.3");
                     request.Headers.TryAddWithoutValidation("Accept", "application/json");
+                    request.Headers.TryAddWithoutValidation("X-Forwarded-For", "71.246.211.53");
+                    request.Headers.TryAddWithoutValidation("X-Real-IP", "71.246.211.53");
                     request.Content = new StringContent(requestJson, Encoding.UTF8, "application/json");
 
                     using var response = await _httpClient.SendAsync(request);
