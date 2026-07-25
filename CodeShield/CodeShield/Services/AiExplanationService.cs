@@ -91,6 +91,7 @@ namespace CodeShield.Services
             int maxAttempts = 3;
             for (int attempt = 1; attempt <= maxAttempts; attempt++)
             {
+                string? responseJson = null;
                 try
                 {
                     await AcquireRateLimitSlotAsync();
@@ -130,7 +131,7 @@ namespace CodeShield.Services
                         return ($"AI analysis failed: the AI service returned HTTP {statusCode}. This is typically a temporary issue — try rescanning.", null);
                     }
 
-                    string responseJson = await response.Content.ReadAsStringAsync();
+                    responseJson = await response.Content.ReadAsStringAsync();
                     Console.WriteLine($"[AI DIAG] Vuln API raw response (first 300 chars): {responseJson[..Math.Min(responseJson.Length, 300)]}");
 
                     using var doc = JsonDocument.Parse(responseJson);
@@ -181,6 +182,14 @@ namespace CodeShield.Services
                         "[AI RETRY] Package={Package} VulnId={VulnId} | Transient Exception {ExType} ({ExMessage}) on attempt {Attempt}/{MaxAttempts}. Retrying in {Delay:F2}s...",
                         packageName, vulnId, exTypeName, ex.Message, attempt, maxAttempts, delay);
                     await Task.Delay(TimeSpan.FromSeconds(delay));
+                }
+                catch (JsonException ex)
+                {
+                    _logger.LogError(
+                        "[AI FAILURE] Package={Package} Version={Version} VulnId={VulnId} | Invalid JSON: {Message} | Response: {Response}",
+                        packageName, version, vulnId, ex.Message, responseJson);
+                    string snippet = responseJson != null ? responseJson[..Math.Min(responseJson.Length, 150)] : "null";
+                    return ($"AI analysis failed: The AI service returned an invalid JSON response (likely an error page). Snippet: {snippet}", null);
                 }
                 catch (Exception ex)
                 {
@@ -239,6 +248,7 @@ namespace CodeShield.Services
             int maxAttempts = 3;
             for (int attempt = 1; attempt <= maxAttempts; attempt++)
             {
+                string? responseJson = null;
                 try
                 {
                     await AcquireRateLimitSlotAsync();
@@ -278,7 +288,7 @@ namespace CodeShield.Services
                         return ($"AI analysis failed: the AI service returned HTTP {statusCode}. This is typically a temporary issue — try rescanning.", null);
                     }
 
-                    string responseJson = await response.Content.ReadAsStringAsync();
+                    responseJson = await response.Content.ReadAsStringAsync();
                     Console.WriteLine($"[AI DIAG] Code API raw response (first 300 chars): {responseJson[..Math.Min(responseJson.Length, 300)]}");
 
                     using var doc = JsonDocument.Parse(responseJson);
@@ -329,6 +339,14 @@ namespace CodeShield.Services
                         "[AI RETRY] File={File} Line={Line} IssueType={IssueType} | Transient Exception {ExType} ({ExMessage}) on attempt {Attempt}/{MaxAttempts}. Retrying in {Delay:F2}s...",
                         fileName, lineNumber, issueType, exTypeName, ex.Message, attempt, maxAttempts, delay);
                     await Task.Delay(TimeSpan.FromSeconds(delay));
+                }
+                catch (JsonException ex)
+                {
+                    _logger.LogError(
+                        "[AI FAILURE] File={File} Line={Line} IssueType={IssueType} | Invalid JSON: {Message} | Response: {Response}",
+                        fileName, lineNumber, issueType, ex.Message, responseJson);
+                    string snippet = responseJson != null ? responseJson[..Math.Min(responseJson.Length, 150)] : "null";
+                    return ($"AI analysis failed: The AI service returned an invalid JSON response (likely an error page). Snippet: {snippet}", null);
                 }
                 catch (Exception ex)
                 {
