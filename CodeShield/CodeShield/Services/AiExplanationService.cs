@@ -99,9 +99,9 @@ namespace CodeShield.Services
                     using var request = new HttpRequestMessage(HttpMethod.Post, requestUri);
                     request.Headers.Add("x-api-key", apiKey);
                     request.Headers.Add("anthropic-version", "2023-06-01");
-                    request.Headers.TryAddWithoutValidation("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36");
+                    request.Headers.Add("x-app-name", "cli");
+                    request.Headers.TryAddWithoutValidation("User-Agent", "anthropic-node/0.24.3");
                     request.Headers.TryAddWithoutValidation("Accept", "application/json");
-                    request.Headers.TryAddWithoutValidation("Accept-Language", "en-US,en;q=0.9");
                     request.Content = new StringContent(requestJson, Encoding.UTF8, "application/json");
 
                     using var response = await _httpClient.SendAsync(request);
@@ -257,9 +257,9 @@ namespace CodeShield.Services
                     using var request = new HttpRequestMessage(HttpMethod.Post, requestUri);
                     request.Headers.Add("x-api-key", apiKey);
                     request.Headers.Add("anthropic-version", "2023-06-01");
-                    request.Headers.TryAddWithoutValidation("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36");
+                    request.Headers.Add("x-app-name", "cli");
+                    request.Headers.TryAddWithoutValidation("User-Agent", "anthropic-node/0.24.3");
                     request.Headers.TryAddWithoutValidation("Accept", "application/json");
-                    request.Headers.TryAddWithoutValidation("Accept-Language", "en-US,en;q=0.9");
                     request.Content = new StringContent(requestJson, Encoding.UTF8, "application/json");
 
                     using var response = await _httpClient.SendAsync(request);
