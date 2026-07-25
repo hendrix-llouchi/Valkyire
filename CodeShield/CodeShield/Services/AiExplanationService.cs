@@ -54,7 +54,7 @@ namespace CodeShield.Services
             if (string.IsNullOrWhiteSpace(apiKey))
             {
                 _logger.LogWarning("AgentRouter API Key is missing. Please set 'AgentRouter:ApiKey' in your configuration (e.g., .NET User Secrets).");
-                return (null, null);
+                return ("AI analysis could not run: the AgentRouter API key is not configured. Please set 'AgentRouter:ApiKey' via dotnet user-secrets.", null);
             }
 
             var requestUri = "https://agentrouter.org/v1/messages";
@@ -103,11 +103,13 @@ namespace CodeShield.Services
                     request.Content = new StringContent(requestJson, Encoding.UTF8, "application/json");
 
                     using var response = await _httpClient.SendAsync(request);
+                    Console.WriteLine($"[AI DIAG] Vuln API response status: {(int)response.StatusCode} for {packageName}@{version} ({vulnId})");
 
                     if (!response.IsSuccessStatusCode)
                     {
                         string rawResponse = await response.Content.ReadAsStringAsync();
                         int statusCode = (int)response.StatusCode;
+                        Console.WriteLine($"[AI DIAG] Vuln API FAILURE body (first 500 chars): {rawResponse[..Math.Min(rawResponse.Length, 500)]}");
 
                         bool isTransient = statusCode == 429 || statusCode == 500 || statusCode == 502 || statusCode == 503 || statusCode == 504;
 
@@ -125,10 +127,11 @@ namespace CodeShield.Services
                             "[AI FAILURE] Package={Package} Version={Version} VulnId={VulnId} | HTTP {StatusCode} | Body: {Body}",
                             packageName, version, vulnId, statusCode, rawResponse);
                         Console.WriteLine($"[AgentRouter FAIL] {packageName}@{version} ({vulnId}) | Status: {statusCode} | Body: {rawResponse}");
-                        return (null, null);
+                        return ($"AI analysis failed: the AI service returned HTTP {statusCode}. This is typically a temporary issue — try rescanning.", null);
                     }
 
                     string responseJson = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"[AI DIAG] Vuln API raw response (first 300 chars): {responseJson[..Math.Min(responseJson.Length, 300)]}");
 
                     using var doc = JsonDocument.Parse(responseJson);
                     var root = doc.RootElement;
@@ -140,14 +143,18 @@ namespace CodeShield.Services
                         if (firstContent.TryGetProperty("text", out var textProp))
                         {
                             string text = textProp.GetString() ?? "";
-                            return ParseJsonResponse(text, packageName, vulnId);
+                            Console.WriteLine($"[AI DIAG] Vuln extracted text (first 300 chars): {text[..Math.Min(text.Length, 300)]}");
+                            var result = ParseJsonResponse(text, packageName, vulnId);
+                            Console.WriteLine($"[AI DIAG] Vuln parsed result: Explanation={result.Explanation?.Length ?? -1} chars, Fix={result.Fix?.Length ?? -1} chars");
+                            return result;
                         }
                     }
 
                     _logger.LogWarning(
                         "[AI FAILURE] Package={Package} Version={Version} VulnId={VulnId} | Unexpected response format. Response: {Response}",
                         packageName, version, vulnId, responseJson);
-                    return (null, null);
+                    Console.WriteLine($"[AI DIAG] Vuln UNEXPECTED FORMAT for {packageName}@{version} ({vulnId})");
+                    return ("AI analysis failed: the AI service returned an unexpected response format. Try rescanning.", null);
                 }
                 catch (TaskCanceledException) when (attempt < maxAttempts)
                 {
@@ -164,7 +171,7 @@ namespace CodeShield.Services
                         "[AI FAILURE] Package={Package} Version={Version} VulnId={VulnId} | Request {Reason} (TaskCanceledException). Message: {Message}",
                         packageName, version, vulnId, reason, tcEx.Message);
                     Console.WriteLine($"[AgentRouter FAIL] {packageName}@{version} ({vulnId}) | Request {reason} | {tcEx.Message}");
-                    return (null, null);
+                    return ($"AI analysis failed: the request to the AI service {reason} after 3 attempts. The service may be slow or unavailable — try rescanning.", null);
                 }
                 catch (Exception ex) when (IsTransientException(ex) && attempt < maxAttempts)
                 {
@@ -181,11 +188,11 @@ namespace CodeShield.Services
                         "[AI FAILURE] Package={Package} Version={Version} VulnId={VulnId} | Exception type={ExType} | Message: {Message}",
                         packageName, version, vulnId, ex.GetType().Name, ex.Message);
                     Console.WriteLine($"[AgentRouter FAIL] {packageName}@{version} ({vulnId}) | {ex.GetType().Name}: {ex.Message}");
-                    return (null, null);
+                    return ($"AI analysis failed due to a network error ({ex.GetType().Name}). Check your internet connection and try rescanning.", null);
                 }
             }
 
-            return (null, null);
+            return ("AI analysis failed after all retry attempts. The AI service may be temporarily unavailable — try rescanning.", null);
         }
 
         public async Task<(string? Explanation, string? Fix)> ExplainCodeIssueAsync(
@@ -195,7 +202,7 @@ namespace CodeShield.Services
             if (string.IsNullOrWhiteSpace(apiKey))
             {
                 _logger.LogWarning("AgentRouter API Key is missing. Please set 'AgentRouter:ApiKey' in your configuration (e.g., .NET User Secrets).");
-                return (null, null);
+                return ("AI analysis could not run: the AgentRouter API key is not configured. Please set 'AgentRouter:ApiKey' via dotnet user-secrets.", null);
             }
 
             var requestUri = "https://agentrouter.org/v1/messages";
@@ -244,11 +251,13 @@ namespace CodeShield.Services
                     request.Content = new StringContent(requestJson, Encoding.UTF8, "application/json");
 
                     using var response = await _httpClient.SendAsync(request);
+                    Console.WriteLine($"[AI DIAG] Code API response status: {(int)response.StatusCode} for {fileName}:{lineNumber} ({issueType})");
 
                     if (!response.IsSuccessStatusCode)
                     {
                         string rawResponse = await response.Content.ReadAsStringAsync();
                         int statusCode = (int)response.StatusCode;
+                        Console.WriteLine($"[AI DIAG] Code API FAILURE body (first 500 chars): {rawResponse[..Math.Min(rawResponse.Length, 500)]}");
 
                         bool isTransient = statusCode == 429 || statusCode == 500 || statusCode == 502 || statusCode == 503 || statusCode == 504;
 
@@ -266,10 +275,11 @@ namespace CodeShield.Services
                             "[AI FAILURE] File={File} Line={Line} IssueType={IssueType} | HTTP {StatusCode} | Body: {Body}",
                             fileName, lineNumber, issueType, statusCode, rawResponse);
                         Console.WriteLine($"[AgentRouter FAIL] {fileName}:{lineNumber} ({issueType}) | Status: {statusCode} | Body: {rawResponse}");
-                        return (null, null);
+                        return ($"AI analysis failed: the AI service returned HTTP {statusCode}. This is typically a temporary issue — try rescanning.", null);
                     }
 
                     string responseJson = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"[AI DIAG] Code API raw response (first 300 chars): {responseJson[..Math.Min(responseJson.Length, 300)]}");
 
                     using var doc = JsonDocument.Parse(responseJson);
                     var root = doc.RootElement;
@@ -281,14 +291,18 @@ namespace CodeShield.Services
                         if (firstContent.TryGetProperty("text", out var textProp))
                         {
                             string text = textProp.GetString() ?? "";
-                            return ParseJsonResponse(text, fileName, $"{issueType} @ line {lineNumber}");
+                            Console.WriteLine($"[AI DIAG] Code extracted text (first 300 chars): {text[..Math.Min(text.Length, 300)]}");
+                            var result = ParseJsonResponse(text, fileName, $"{issueType} @ line {lineNumber}");
+                            Console.WriteLine($"[AI DIAG] Code parsed result: Explanation={result.Explanation?.Length ?? -1} chars, Fix={result.Fix?.Length ?? -1} chars");
+                            return result;
                         }
                     }
 
                     _logger.LogWarning(
                         "[AI FAILURE] File={File} Line={Line} IssueType={IssueType} | Unexpected response format. Response: {Response}",
                         fileName, lineNumber, issueType, responseJson);
-                    return (null, null);
+                    Console.WriteLine($"[AI DIAG] Code UNEXPECTED FORMAT for {fileName}:{lineNumber} ({issueType})");
+                    return ("AI analysis failed: the AI service returned an unexpected response format. Try rescanning.", null);
                 }
                 catch (TaskCanceledException) when (attempt < maxAttempts)
                 {
@@ -305,7 +319,7 @@ namespace CodeShield.Services
                         "[AI FAILURE] File={File} Line={Line} IssueType={IssueType} | Request {Reason} (TaskCanceledException). Message: {Message}",
                         fileName, lineNumber, issueType, reason, tcEx.Message);
                     Console.WriteLine($"[AgentRouter FAIL] {fileName}:{lineNumber} ({issueType}) | Request {reason} | {tcEx.Message}");
-                    return (null, null);
+                    return ($"AI analysis failed: the request to the AI service {reason} after 3 attempts. The service may be slow or unavailable — try rescanning.", null);
                 }
                 catch (Exception ex) when (IsTransientException(ex) && attempt < maxAttempts)
                 {
@@ -322,11 +336,11 @@ namespace CodeShield.Services
                         "[AI FAILURE] File={File} Line={Line} IssueType={IssueType} | Exception type={ExType} | Message: {Message}",
                         fileName, lineNumber, issueType, ex.GetType().Name, ex.Message);
                     Console.WriteLine($"[AgentRouter FAIL] {fileName}:{lineNumber} ({issueType}) | {ex.GetType().Name}: {ex.Message}");
-                    return (null, null);
+                    return ($"AI analysis failed due to a network error ({ex.GetType().Name}). Check your internet connection and try rescanning.", null);
                 }
             }
 
-            return (null, null);
+            return ("AI analysis failed after all retry attempts. The AI service may be temporarily unavailable — try rescanning.", null);
         }
 
         private static bool IsTransientException(Exception ex)
