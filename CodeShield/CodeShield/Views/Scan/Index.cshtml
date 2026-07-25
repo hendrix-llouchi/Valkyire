@@ -401,34 +401,82 @@
 
 <style>
     @@media print {
-        header, footer, nav, .navbar, #scan-form-card, #scan-loader, .nav-pills, .nb-btn, button, form {
+        header, footer, nav, .navbar, #scan-form-card, #scan-loader, .nav-pills, .nb-btn, button, form, .btn {
             display: none !important;
         }
-        body {
-            background-color: #ffffff !important;
+        body, html {
+            background: #ffffff !important;
             color: #000000 !important;
+            margin: 0 !important;
+            padding: 0 !important;
         }
-        .container {
+        .container, .col-lg-9, .col-lg-10, .row {
             max-width: 100% !important;
             width: 100% !important;
             padding: 0 !important;
             margin: 0 !important;
         }
-        .tab-pane {
+        .tab-content > .tab-pane {
             display: block !important;
             opacity: 1 !important;
             visibility: visible !important;
+            height: auto !important;
+            overflow: visible !important;
         }
-        .nb-card, .p-4, .p-3 {
+        #packages-pane::before {
+            content: "PACKAGE DEPENDENCIES";
+            display: block;
+            font-size: 1.2rem;
+            font-weight: 800;
+            margin-top: 1rem;
+            margin-bottom: 0.75rem;
+            border-bottom: 2px solid #000;
+            padding-bottom: 0.25rem;
+        }
+        #issues-pane::before {
+            content: "CODE SECURITY ISSUES";
+            display: block;
+            font-size: 1.2rem;
+            font-weight: 800;
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            border-bottom: 2px solid #000;
+            padding-bottom: 0.25rem;
+        }
+        #files-pane::before {
+            content: "REPOSITORY FILE LIST";
+            display: block;
+            font-size: 1.2rem;
+            font-weight: 800;
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            border-bottom: 2px solid #000;
+            padding-bottom: 0.25rem;
+        }
+        #files-pane div[style*="max-height"] {
+            max-height: none !important;
+            overflow: visible !important;
+        }
+        .nb-card {
             box-shadow: none !important;
             border: 1px solid #000000 !important;
+            margin-bottom: 1rem !important;
+            break-inside: auto;
+            page-break-inside: auto;
+        }
+        .p-4, .p-3, .p-2, .p-5 {
+            break-inside: auto !important;
+            page-break-inside: auto !important;
+        }
+        .border-bottom.border-dark.p-3, .list-group-item, .nb-card-body {
             break-inside: avoid;
             page-break-inside: avoid;
-            margin-bottom: 1.5rem !important;
         }
         .nb-ai-box {
             border: 1px solid #333 !important;
             background-color: #f8f9fa !important;
+            break-inside: avoid;
+            page-break-inside: avoid;
         }
     }
 </style>
