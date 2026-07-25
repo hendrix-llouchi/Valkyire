@@ -81,6 +81,13 @@
                         </div>
                     }
 
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h4 class="nb-heading mb-0">SCAN RESULTS</h4>
+                        <button onclick="window.print()" class="nb-btn nb-btn-secondary py-2 px-3 fs-6" style="box-shadow: 2.5px 2.5px 0px var(--color-black) !important;">
+                            📄 EXPORT REPORT (PDF)
+                        </button>
+                    </div>
+
                     <!-- Tabs Control -->
                     <ul class="nav nb-nav-pills mb-4" id="scanTabs" role="tablist">
                         <li class="nav-item" role="presentation" style="flex: 1;">
@@ -391,3 +398,37 @@
         });
     </script>
 }
+
+<style>
+    @@media print {
+        header, footer, nav, .navbar, #scan-form-card, #scan-loader, .nav-pills, .nb-btn, button, form {
+            display: none !important;
+        }
+        body {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+        }
+        .container {
+            max-width: 100% !important;
+            width: 100% !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+        .tab-pane {
+            display: block !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+        }
+        .nb-card, .p-4, .p-3 {
+            box-shadow: none !important;
+            border: 1px solid #000000 !important;
+            break-inside: avoid;
+            page-break-inside: avoid;
+            margin-bottom: 1.5rem !important;
+        }
+        .nb-ai-box {
+            border: 1px solid #333 !important;
+            background-color: #f8f9fa !important;
+        }
+    }
+</style>

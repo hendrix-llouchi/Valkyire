@@ -9,12 +9,28 @@
             <h1 class="nb-heading mb-1" style="font-size: 2rem;">MY SCANS</h1>
             <p class="nb-mono text-muted small mb-0 text-uppercase">View your repository scan history and security trends.</p>
         </div>
-        <div>
+        <div class="d-flex align-items-center gap-2">
+            @if (Model.Any())
+            {
+                <form asp-controller="Scan" asp-action="DeleteAll" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to clear your entire scan history? This action cannot be undone.');">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="nb-btn nb-btn-secondary d-flex align-items-center gap-2">
+                        <span>🗑️</span> CLEAR ALL HISTORY
+                    </button>
+                </form>
+            }
             <a asp-controller="Scan" asp-action="Index" class="nb-btn nb-btn-primary d-flex align-items-center gap-2">
                 <span>🔍</span> NEW SCAN
             </a>
         </div>
     </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success border-2 border-dark rounded-0 nb-mono mb-4">
+            ✅ @TempData["SuccessMessage"]
+        </div>
+    }
 
     @if (!Model.Any())
     {
@@ -112,6 +128,12 @@
                                         <a asp-controller="Scan" asp-action="Index" asp-route-repositoryUrl="@scan.RepositoryUrl" class="nb-btn nb-btn-primary px-3 py-1 fs-7" style="box-shadow: 2px 2px 0px var(--color-black) !important;">
                                             Rescan
                                         </a>
+                                        <form asp-controller="Scan" asp-action="Delete" asp-route-id="@scan.Id" method="post" class="d-inline" onsubmit="return confirm('Delete scan record for @scan.RepositoryName?');">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="nb-btn btn-danger text-white px-2 py-1 fs-7 border-2 border-dark" style="box-shadow: 2px 2px 0px var(--color-black) !important; background-color: #dc3545;">
+                                                🗑️
+                                            </button>
+                                        </form>
                                     </div>
                                 </td>
                             </tr>
