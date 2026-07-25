@@ -328,27 +328,31 @@ namespace CodeShield.Controllers
 
         private string ComputeSecurityGrade(int criticalCount, int highCount, int mediumCount, int lowCount)
         {
-            if (criticalCount + highCount + mediumCount + lowCount == 0)
+            int totalIssues = criticalCount + highCount + mediumCount + lowCount;
+            if (totalIssues == 0)
             {
                 return "A";
             }
-            if (criticalCount >= 3)
+
+            int score = 100 - (criticalCount * 20 + highCount * 10 + mediumCount * 5 + lowCount * 2);
+
+            if (score >= 90)
             {
-                return "F";
+                return "A";
             }
-            if (criticalCount > 0 || highCount >= 3)
-            {
-                return "D";
-            }
-            if (highCount > 0 || (mediumCount + lowCount) >= 5)
-            {
-                return "C";
-            }
-            if (mediumCount > 0 || lowCount >= 5)
+            if (score >= 75)
             {
                 return "B";
             }
-            return "A";
+            if (score >= 60)
+            {
+                return "C";
+            }
+            if (score >= 45)
+            {
+                return "D";
+            }
+            return "F";
         }
 
         [HttpGet]
@@ -390,6 +394,60 @@ namespace CodeShield.Controllers
             }
 
             return View("Details", scan);
+        }
+
+        [HttpPost]
+        [Route("Scans/Delete/{id:int}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(int id, string? returnUrl = null)
+        {
+            var userId = _userManager.GetUserId(User);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Challenge();
+            }
+
+            var scan = await _context.ScanResults.FirstOrDefaultAsync(s => s.Id == id && s.UserId == userId);
+            if (scan != null)
+            {
+                _context.ScanResults.Remove(scan);
+                await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = "Scan history record deleted successfully.";
+            }
+
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            {
+                return Redirect(returnUrl);
+            }
+
+            return RedirectToAction("History");
+        }
+
+        [HttpPost]
+        [Route("Scans/DeleteAll")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteAll(string? returnUrl = null)
+        {
+            var userId = _userManager.GetUserId(User);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Challenge();
+            }
+
+            var userScans = await _context.ScanResults.Where(s => s.UserId == userId).ToListAsync();
+            if (userScans.Any())
+            {
+                _context.ScanResults.RemoveRange(userScans);
+                await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = "All scan history cleared successfully.";
+            }
+
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            {
+                return Redirect(returnUrl);
+            }
+
+            return RedirectToAction("History");
         }
     }
 }

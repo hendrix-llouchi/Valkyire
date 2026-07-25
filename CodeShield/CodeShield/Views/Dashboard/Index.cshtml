@@ -133,6 +133,12 @@
                                     <a asp-controller="Scan" asp-action="Details" asp-route-id="@scan.Id" class="nb-btn nb-btn-secondary px-2 py-0 fs-7" style="box-shadow: 1px 1px 0px var(--color-black) !important;">
                                         View
                                     </a>
+                                    <form asp-controller="Scan" asp-action="Delete" asp-route-id="@scan.Id" asp-route-returnUrl="/Dashboard" method="post" class="d-inline" onsubmit="return confirm('Delete scan record for @scan.RepositoryName?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="nb-btn btn-danger text-white px-2 py-0 fs-7 border-1 border-dark" style="box-shadow: 1px 1px 0px var(--color-black) !important; background-color: #dc3545;" title="Delete Scan">
+                                            🗑️
+                                        </button>
+                                    </form>
                                 </div>
                             </div>
                         }
