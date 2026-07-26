@@ -67,18 +67,6 @@
                 </div>
             </div>
 
-            <!-- Warning Banners -->
-            @if (detectedEcosystemList.Contains(CodeShield.Models.Ecosystem.Python) && !detectedEcosystemList.Contains(CodeShield.Models.Ecosystem.Npm) && !detectedEcosystemList.Contains(CodeShield.Models.Ecosystem.NuGet))
-            {
-                <div class="alert nb-alert-warning p-4 mb-4 d-flex align-items-start" id="python-warning-banner">
-                    <span class="fs-3 me-3">⚠️</span>
-                    <div>
-                        <h5 class="alert-heading nb-heading mb-1" style="font-size: 1.1rem;">Python Package Scan Limitation</h5>
-                        <p class="mb-0 small text-uppercase" style="font-size: 0.8rem; font-weight: 600;">Package vulnerability scanning is disabled for Python repositories. Code pattern scanning is active for Python source files, but no third-party dependency vulnerability checks are performed.</p>
-                    </div>
-                </div>
-            }
-
             @if (Model.Status == CodeShield.Models.ScanStatus.PartialFailure)
             {
                 <div class="alert nb-alert-warning p-4 mb-4 d-flex align-items-start" id="osv-warning-banner">
@@ -112,29 +100,40 @@
                     {
                         @foreach (var ecosystem in detectedEcosystemList)
                         {
-                            var ecosystemName = ecosystem == CodeShield.Models.Ecosystem.Npm ? "npm" :
-                                                 ecosystem == CodeShield.Models.Ecosystem.NuGet ? "NuGet" : "Python";
+                            var ecosystemName = ecosystem switch
+                            {
+                                CodeShield.Models.Ecosystem.Npm => "npm",
+                                CodeShield.Models.Ecosystem.NuGet => "NuGet",
+                                CodeShield.Models.Ecosystem.Python => "Python (PyPI)",
+                                CodeShield.Models.Ecosystem.Maven => "Java (Maven)",
+                                CodeShield.Models.Ecosystem.Go => "Go",
+                                CodeShield.Models.Ecosystem.Ruby => "RubyGems",
+                                CodeShield.Models.Ecosystem.PHP => "PHP (Packagist)",
+                                _ => ecosystem.ToString()
+                            };
+                            var icon = ecosystem switch
+                            {
+                                CodeShield.Models.Ecosystem.Npm => "🟢",
+                                CodeShield.Models.Ecosystem.NuGet => "🔵",
+                                CodeShield.Models.Ecosystem.Python => "🐍",
+                                CodeShield.Models.Ecosystem.Maven => "☕",
+                                CodeShield.Models.Ecosystem.Go => "🐹",
+                                CodeShield.Models.Ecosystem.Ruby => "💎",
+                                CodeShield.Models.Ecosystem.PHP => "🐘",
+                                _ => "📦"
+                            };
                             var ecosystemPackages = Model.VulnerablePackages?.Where(p => p.Ecosystem == ecosystem).ToList() ?? new List<CodeShield.Models.VulnerablePackage>();
 
                             <div class="nb-card p-4 mb-4">
                                 <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom border-dark">
                                     <h5 class="nb-heading mb-0 d-flex align-items-center gap-2">
-                                        <span>@(ecosystem == CodeShield.Models.Ecosystem.Npm ? "🟢" : ecosystem == CodeShield.Models.Ecosystem.NuGet ? "🔵" : "🐍")</span> 
+                                        <span>@icon</span> 
                                         @ecosystemName Packages
                                     </h5>
                                     <span class="nb-badge nb-badge-light py-1 px-3 fs-7">@ecosystemPackages.Count vulnerable packages</span>
                                 </div>
 
-                                @if (ecosystem == CodeShield.Models.Ecosystem.Python)
-                                {
-                                    <div class="alert nb-alert-warning p-3 mb-0">
-                                        <p class="mb-0 small fw-bold">
-                                            ⚠️ Package dependency vulnerability scans are currently disabled for Python.
-                                        </p>
-                                    </div>
-                                }
-                                else
-                                {
+                                @{
                                     var vulnPackageCount = ecosystemPackages.Count;
 
                                     <div class="p-3 mb-3 @(vulnPackageCount > 0 ? "nb-alert-danger text-danger" : "nb-alert-success text-success")">

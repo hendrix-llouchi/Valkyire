@@ -12,20 +12,16 @@ Built with **ASP.NET Core (.NET 10)**, Razor Views, Entity Framework Core, and a
 - Validates public GitHub repository URLs before any scanning begins.
 - Queries the **GitHub REST API** to recursively fetch the repository's file tree.
 - Enforces a **1,000-file threshold** to avoid scanning extremely large repositories.
-- Detects supported ecosystems (`package.json`, `.csproj`, `requirements.txt`) and fails fast with a clear message if none are found.
+- Detects supported ecosystems (`package.json`, `.csproj`, `requirements.txt`, `pom.xml`, `go.mod`, `Gemfile.lock`, `composer.json`) and fails fast with a clear message if none are found.
 - Supports **Monorepos**: Scans all supported ecosystems found in a repository and groups findings cleanly by ecosystem in the UI.
 
 ### 📦 Dependency Vulnerability Scanning
-- Full support for **npm** (`package.json`) and **NuGet** (`.csproj`) dependency parsing.
-- Queries the free, public **OSV.dev API** in batches to check installed package versions against known CVEs.
+- Full support for **npm** (`package.json`), **NuGet** (`.csproj`), **Python** (`requirements.txt` / PyPI), **Java** (`pom.xml` / Maven), **Go** (`go.mod`), **Ruby** (`Gemfile.lock` / RubyGems), and **PHP** (`composer.json` / Packagist).
+- Queries the free, public **OSV.dev API** in batches to check installed package versions against known CVEs across all supported ecosystems.
 - Handles partial API failures gracefully — shows results that succeeded with a warning note for any that couldn't be checked.
 
-### 🐍 Python (Partial Support)
-- When only `requirements.txt` is detected, the code pattern scanner still runs.
-- A **prominent banner** is shown on the results page making it clear that package vulnerability scanning is not available for Python — this is a valid, successful scan outcome.
-
 ### 🧩 Code Pattern Scanning
-- Scans C#, JavaScript, and Python source files using conservative **regular expression** patterns.
+- Scans C#, JavaScript/TypeScript, Python, Java, Go, Ruby, and PHP source files using conservative **regular expression** patterns.
 - Detects four issue types:
   | Issue Type | Description |
   |---|---|
@@ -232,8 +228,11 @@ The app will be available at `https://localhost:7147` or `http://localhost:5213`
 
 ## 🧪 Running Tests
 
-> [!NOTE]
-> Unit tests are not yet implemented in the initial release. A test project is planned for future iterations.
+Execute the unit test suite using the .NET CLI:
+
+```bash
+dotnet test CodeShield.Tests/CodeShield.Tests.csproj
+```
 
 ---
 

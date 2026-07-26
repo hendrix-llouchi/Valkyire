@@ -6,7 +6,11 @@ namespace CodeShield.Models
     {
         Npm,
         NuGet,
-        Python
+        Python,
+        Maven,
+        Go,
+        Ruby,
+        PHP
     }
 
     public enum Severity

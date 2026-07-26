@@ -121,8 +121,7 @@ namespace CodeShield.Controllers
                 // Add vulnerability AI tasks
                 if (packages != null && packages.Count > 0)
                 {
-                    var nonPythonPackages = packages.Where(p => p.Ecosystem != Ecosystem.Python).ToList();
-                    var vulnerabilitiesToExplain = nonPythonPackages
+                    var vulnerabilitiesToExplain = packages
                         .SelectMany(p => p.Vulnerabilities.Select(v => new { Package = p, Vulnerability = v }))
                         .ToList();
 
@@ -253,7 +252,7 @@ namespace CodeShield.Controllers
                 }
                 if (packages != null)
                 {
-                    foreach (var pkg in packages.Where(p => p.Ecosystem != Ecosystem.Python))
+                    foreach (var pkg in packages)
                     {
                         foreach (var v in pkg.Vulnerabilities)
                         {
@@ -275,9 +274,7 @@ namespace CodeShield.Controllers
                 var userId = _userManager.GetUserId(User);
                 if (!string.IsNullOrEmpty(userId))
                 {
-                    var vulnList = packages?.Where(p => p.Ecosystem != Ecosystem.Python)
-                                           .SelectMany(p => p.Vulnerabilities)
-                                           .ToList() ?? new List<VulnerabilityDetail>();
+                    var vulnList = packages?.SelectMany(p => p.Vulnerabilities).ToList() ?? new List<VulnerabilityDetail>();
                     var codeIssueList = model.CodeIssues ?? new List<CodeIssue>();
 
                     int criticalCount = vulnList.Count(v => v.Severity == Severity.Critical) + codeIssueList.Count(c => c.Severity == Severity.Critical);
