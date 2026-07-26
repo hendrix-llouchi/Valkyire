@@ -59,17 +59,6 @@
             {
                 <div id="scan-results-container">
                     <!-- Warning Banners -->
-                    @if (Model.DetectedEcosystems != null && Model.DetectedEcosystems.Contains(CodeShield.Models.Ecosystem.Python) && !Model.DetectedEcosystems.Contains(CodeShield.Models.Ecosystem.Npm) && !Model.DetectedEcosystems.Contains(CodeShield.Models.Ecosystem.NuGet))
-                    {
-                        <div class="alert nb-alert-warning p-4 mb-4 d-flex align-items-start" id="python-warning-banner">
-                            <span class="fs-3 me-3">⚠️</span>
-                            <div>
-                                <h5 class="alert-heading nb-heading mb-1" style="font-size: 1.1rem;">Python Package Scan Limitation</h5>
-                                <p class="mb-0 small text-uppercase" style="font-size: 0.8rem; font-weight: 600;">Package vulnerability scanning is disabled for Python repositories. Code pattern scanning is active for Python source files, but no third-party dependency vulnerability checks are performed.</p>
-                            </div>
-                        </div>
-                    }
-
                     @if (!string.IsNullOrEmpty(Model.OsvWarningMessage))
                     {
                         <div class="alert nb-alert-warning p-4 mb-4 d-flex align-items-start" id="osv-warning-banner">
@@ -115,139 +104,125 @@
                             {
                                 @foreach (var ecosystem in Model.DetectedEcosystems)
                                 {
-                                    var ecosystemName = ecosystem == CodeShield.Models.Ecosystem.Npm ? "npm" :
-                                                         ecosystem == CodeShield.Models.Ecosystem.NuGet ? "NuGet" : "Python";
-                                    var badgeColor = ecosystem == CodeShield.Models.Ecosystem.Npm ? "bg-warning text-dark" :
-                                                     ecosystem == CodeShield.Models.Ecosystem.NuGet ? "bg-primary text-white" : "bg-info text-dark";
+                                    var ecosystemName = ecosystem switch
+                                    {
+                                        CodeShield.Models.Ecosystem.Npm => "npm",
+                                        CodeShield.Models.Ecosystem.NuGet => "NuGet",
+                                        CodeShield.Models.Ecosystem.Python => "Python (PyPI)",
+                                        CodeShield.Models.Ecosystem.Maven => "Java (Maven)",
+                                        CodeShield.Models.Ecosystem.Go => "Go",
+                                        CodeShield.Models.Ecosystem.Ruby => "RubyGems",
+                                        CodeShield.Models.Ecosystem.PHP => "PHP (Packagist)",
+                                        _ => ecosystem.ToString()
+                                    };
+                                    var icon = ecosystem switch
+                                    {
+                                        CodeShield.Models.Ecosystem.Npm => "🟢",
+                                        CodeShield.Models.Ecosystem.NuGet => "🔵",
+                                        CodeShield.Models.Ecosystem.Python => "🐍",
+                                        CodeShield.Models.Ecosystem.Maven => "☕",
+                                        CodeShield.Models.Ecosystem.Go => "🐹",
+                                        CodeShield.Models.Ecosystem.Ruby => "💎",
+                                        CodeShield.Models.Ecosystem.PHP => "🐘",
+                                        _ => "📦"
+                                    };
                                     var ecosystemPackages = Model.Packages?.Where(p => p.Ecosystem == ecosystem).ToList() ?? new List<CodeShield.Models.DependencyPackage>();
+                                    var vulnerablePackages = ecosystemPackages.Where(p => p.Vulnerabilities.Count > 0).ToList();
+                                    var vulnPackageCount = vulnerablePackages.Count;
+                                    var totalPackageCount = ecosystemPackages.Count;
 
                                     <div class="nb-card p-4 mb-4">
                                         <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom border-dark">
                                             <h5 class="nb-heading mb-0 d-flex align-items-center gap-2">
-                                                <span>@(ecosystem == CodeShield.Models.Ecosystem.Npm ? "🟢" : ecosystem == CodeShield.Models.Ecosystem.NuGet ? "🔵" : "🐍")</span> 
+                                                <span>@icon</span> 
                                                 @ecosystemName Packages
                                             </h5>
                                             <span class="nb-badge nb-badge-light py-1 px-3 fs-7">@ecosystemPackages.Count packages</span>
                                         </div>
 
-                                        @if (ecosystem == CodeShield.Models.Ecosystem.Python)
+                                        <div class="p-3 mb-3 @(vulnPackageCount > 0 ? "nb-alert-danger text-danger" : "nb-alert-success text-success")">
+                                            <p class="mb-0 small fw-bold">
+                                                @if (vulnPackageCount > 0)
+                                                {
+                                                    <span>⚠️ Attention required: @vulnPackageCount of @totalPackageCount @ecosystemName dependencies have known security risks.</span>
+                                                }
+                                                else
+                                                {
+                                                    <span>✅ No package vulnerabilities found in @ecosystemName dependencies (@totalPackageCount checked).</span>
+                                                }
+                                            </p>
+                                        </div>
+
+                                        @if (vulnPackageCount > 0)
                                         {
-                                            <div class="alert nb-alert-warning p-3 mb-0">
-                                                <p class="mb-0 small fw-bold">
-                                                    ⚠️ Package dependency vulnerability scans are currently disabled for Python.
-                                                </p>
-                                            </div>
-                                            @if (ecosystemPackages.Count == 0)
-                                            {
-                                                <div class="p-4 text-center text-muted nb-mono small">
-                                                    No python dependency packages listed in requirements.txt
-                                                </div>
-                                            }
-                                            else
-                                            {
-                                                <div class="row g-2 mt-2">
-                                                    @foreach (var pkg in ecosystemPackages)
-                                                    {
-                                                        <div class="col-md-6 col-lg-4">
-                                                            <div class="p-2 border border-2 border-dark bg-white d-flex justify-content-between align-items-center nb-mono">
-                                                                <span class="fw-bold text-dark small text-truncate" style="max-width: 120px;">@pkg.PackageName</span>
-                                                                <span class="nb-badge nb-badge-light py-0 px-2 font-monospace small" style="box-shadow: none; border-width: 1px !important;">@pkg.Version</span>
-                                                            </div>
+                                            <div class="d-flex flex-column gap-3">
+                                                @foreach (var pkg in vulnerablePackages)
+                                                {
+                                                    <div class="p-3 border border-2 border-dark bg-white">
+                                                        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                                                            <h6 class="nb-heading mb-0 text-dark small">
+                                                                📦 @pkg.PackageName
+                                                            </h6>
+                                                            <span class="nb-badge nb-badge-light font-monospace py-1 px-2 fs-7" style="box-shadow: none;">Version: @pkg.Version</span>
                                                         </div>
-                                                    }
-                                                </div>
-                                            }
-                                        }
-                                        else
-                                        {
-                                            var vulnerablePackages = ecosystemPackages.Where(p => p.Vulnerabilities.Count > 0).ToList();
-                                            var vulnPackageCount = vulnerablePackages.Count;
-                                            var totalPackageCount = ecosystemPackages.Count;
-
-                                            <div class="p-3 mb-3 @(vulnPackageCount > 0 ? "nb-alert-danger text-danger" : "nb-alert-success text-success")">
-                                                <p class="mb-0 small fw-bold">
-                                                    @if (vulnPackageCount > 0)
-                                                    {
-                                                        <span>⚠️ Attention required: @vulnPackageCount of @totalPackageCount @ecosystemName dependencies have known security risks.</span>
-                                                    }
-                                                    else
-                                                    {
-                                                        <span>✅ No package vulnerabilities found in @ecosystemName dependencies (@totalPackageCount checked).</span>
-                                                    }
-                                                </p>
-                                            </div>
-
-                                            @if (vulnPackageCount > 0)
-                                            {
-                                                <div class="d-flex flex-column gap-3">
-                                                    @foreach (var pkg in vulnerablePackages)
-                                                    {
-                                                        <div class="p-3 border border-2 border-dark bg-white">
-                                                            <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
-                                                                <h6 class="nb-heading mb-0 text-dark small">
-                                                                    📦 @pkg.PackageName
-                                                                </h6>
-                                                                <span class="nb-badge nb-badge-light font-monospace py-1 px-2 fs-7" style="box-shadow: none;">Version: @pkg.Version</span>
-                                                            </div>
-                                                            
-                                                            <div class="d-flex flex-column gap-2">
-                                                                @foreach (var vuln in pkg.Vulnerabilities)
+                                                        
+                                                        <div class="d-flex flex-column gap-2">
+                                                            @foreach (var vuln in pkg.Vulnerabilities)
+                                                            {
+                                                                var severityClass = vuln.Severity switch
                                                                 {
-                                                                    var severityClass = vuln.Severity switch
-                                                                    {
-                                                                        CodeShield.Models.Severity.Critical => "nb-badge typical-theme",
-                                                                        CodeShield.Models.Severity.High => "nb-badge typical-theme",
-                                                                        CodeShield.Models.Severity.Medium => "nb-badge adventurer-theme",
-                                                                        _ => "nb-badge nb-badge-light"
-                                                                    };
-                                                                    var borderClass = vuln.Severity switch
-                                                                    {
-                                                                        CodeShield.Models.Severity.Critical => "border-danger",
-                                                                        CodeShield.Models.Severity.High => "border-warning",
-                                                                        CodeShield.Models.Severity.Medium => "border-info",
-                                                                        _ => "border-secondary"
-                                                                    };
-                                                                    
-                                                                    <div class="p-3 bg-white border border-2 border-dark border-start border-5 @borderClass shadow-sm" style="border-left-width: 6px !important;">
-                                                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                                                            <span class="fw-bold font-monospace text-secondary small">@vuln.Id</span>
-                                                                            <span class="@severityClass py-1 px-2 font-monospace" style="font-size: 0.7rem; box-shadow: none;">@vuln.Severity</span>
-                                                                        </div>
-                                                                        <p class="mb-2 text-secondary small">@vuln.Description</p>
-                                                                        
-                                                                        <!-- AI Explanation and Fix Suggestion -->
-                                                                        @if (!string.IsNullOrEmpty(vuln.AiExplanation) || !string.IsNullOrEmpty(vuln.AiFixSuggestion))
-                                                                        {
-                                                                            <div class="mt-3 pt-3 border-top border-dark">
-                                                                                @if (!string.IsNullOrEmpty(vuln.AiExplanation))
-                                                                                {
-                                                                                    <div class="nb-ai-box nb-ai-box-info mb-2">
-                                                                                        <span class="d-block nb-heading mb-1 text-start" style="font-size: 0.8rem;">🤖 AI Explanation</span>
-                                                                                        <p class="mb-0 text-dark small" style="font-weight: 500;">@vuln.AiExplanation</p>
-                                                                                    </div>
-                                                                                }
-                                                                                @if (!string.IsNullOrEmpty(vuln.AiFixSuggestion))
-                                                                                {
-                                                                                    <div class="nb-ai-box nb-ai-box-success">
-                                                                                        <span class="d-block nb-heading mb-1 text-start" style="font-size: 0.8rem;">💡 Suggested Fix</span>
-                                                                                        <p class="mb-0 text-dark small" style="font-weight: 500;">@vuln.AiFixSuggestion</p>
-                                                                                    </div>
-                                                                                }
-                                                                            </div>
-                                                                        }
-                                                                        else
-                                                                        {
-                                                                            <div class="mt-3 pt-2 border-top border-dark text-muted small d-flex align-items-center gap-1 nb-mono">
-                                                                                <span>🤖</span> <em>AI explanation unavailable for this issue.</em>
-                                                                            </div>
-                                                                        }
+                                                                    CodeShield.Models.Severity.Critical => "nb-badge typical-theme",
+                                                                    CodeShield.Models.Severity.High => "nb-badge typical-theme",
+                                                                    CodeShield.Models.Severity.Medium => "nb-badge adventurer-theme",
+                                                                    _ => "nb-badge nb-badge-light"
+                                                                };
+                                                                var borderClass = vuln.Severity switch
+                                                                {
+                                                                    CodeShield.Models.Severity.Critical => "border-danger",
+                                                                    CodeShield.Models.Severity.High => "border-warning",
+                                                                    CodeShield.Models.Severity.Medium => "border-info",
+                                                                    _ => "border-secondary"
+                                                                };
+                                                                
+                                                                <div class="p-3 bg-white border border-2 border-dark border-start border-5 @borderClass shadow-sm" style="border-left-width: 6px !important;">
+                                                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                                                        <span class="fw-bold font-monospace text-secondary small">@vuln.Id</span>
+                                                                        <span class="@severityClass py-1 px-2 font-monospace" style="font-size: 0.7rem; box-shadow: none;">@vuln.Severity</span>
                                                                     </div>
-                                                                }
-                                                            </div>
+                                                                    <p class="mb-2 text-secondary small">@vuln.Description</p>
+                                                                    
+                                                                    <!-- AI Explanation and Fix Suggestion -->
+                                                                    @if (!string.IsNullOrEmpty(vuln.AiExplanation) || !string.IsNullOrEmpty(vuln.AiFixSuggestion))
+                                                                    {
+                                                                        <div class="mt-3 pt-3 border-top border-dark">
+                                                                            @if (!string.IsNullOrEmpty(vuln.AiExplanation))
+                                                                            {
+                                                                                <div class="nb-ai-box nb-ai-box-info mb-2">
+                                                                                    <span class="d-block nb-heading mb-1 text-start" style="font-size: 0.8rem;">🤖 AI Explanation</span>
+                                                                                    <p class="mb-0 text-dark small" style="font-weight: 500;">@vuln.AiExplanation</p>
+                                                                                </div>
+                                                                            }
+                                                                            @if (!string.IsNullOrEmpty(vuln.AiFixSuggestion))
+                                                                            {
+                                                                                <div class="nb-ai-box nb-ai-box-success">
+                                                                                    <span class="d-block nb-heading mb-1 text-start" style="font-size: 0.8rem;">💡 Suggested Fix</span>
+                                                                                    <p class="mb-0 text-dark small" style="font-weight: 500;">@vuln.AiFixSuggestion</p>
+                                                                                </div>
+                                                                            }
+                                                                        </div>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <div class="mt-3 pt-2 border-top border-dark text-muted small d-flex align-items-center gap-1 nb-mono">
+                                                                            <span>🤖</span> <em>AI explanation unavailable for this issue.</em>
+                                                                        </div>
+                                                                    }
+                                                                </div>
+                                                            }
                                                         </div>
-                                                    }
-                                                </div>
-                                            }
+                                                    </div>
+                                                }
+                                            </div>
                                         }
                                     </div>
                                 }

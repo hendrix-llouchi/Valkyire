@@ -26,9 +26,9 @@ namespace CodeShield.Services
                 return (true, null);
             }
 
-            // 1. Filter packages to only npm and NuGet
+            // 1. All parsed ecosystems can be queried against OSV.dev
             var queryablePackages = packages
-                .Where(p => p.Ecosystem == Ecosystem.Npm || p.Ecosystem == Ecosystem.NuGet)
+                .Where(p => !string.IsNullOrWhiteSpace(p.PackageName))
                 .ToList();
 
             if (queryablePackages.Count == 0)
@@ -42,7 +42,17 @@ namespace CodeShield.Services
                 package = new
                 {
                     name = p.PackageName,
-                    ecosystem = p.Ecosystem == Ecosystem.Npm ? "npm" : "NuGet"
+                    ecosystem = p.Ecosystem switch
+                    {
+                        Ecosystem.Npm => "npm",
+                        Ecosystem.NuGet => "NuGet",
+                        Ecosystem.Python => "PyPI",
+                        Ecosystem.Maven => "Maven",
+                        Ecosystem.Go => "Go",
+                        Ecosystem.Ruby => "RubyGems",
+                        Ecosystem.PHP => "Packagist",
+                        _ => p.Ecosystem.ToString()
+                    }
                 },
                 version = p.Version
             }).ToList();

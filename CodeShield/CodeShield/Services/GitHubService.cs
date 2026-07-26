@@ -129,7 +129,13 @@ namespace CodeShield.Services
                 foreach (var f in files)
                 {
                     string fileName = System.IO.Path.GetFileName(f).ToLowerInvariant();
-                    if (fileName == "package.json" || fileName.EndsWith(".csproj") || fileName == "requirements.txt")
+                    if (fileName == "package.json" || 
+                        fileName.EndsWith(".csproj") || 
+                        fileName == "requirements.txt" ||
+                        fileName == "pom.xml" ||
+                        fileName == "go.mod" ||
+                        fileName == "gemfile.lock" || fileName == "gemfile" ||
+                        fileName == "composer.json" || fileName == "composer.lock")
                     {
                         detectedDependencyFiles.Add(f);
                     }
@@ -137,7 +143,7 @@ namespace CodeShield.Services
 
                 if (detectedDependencyFiles.Count == 0)
                 {
-                    return (null, null, null, "No supported dependency files found. CodeShield supports npm (package.json), NuGet (*.csproj), and Python (requirements.txt).");
+                    return (null, null, null, "No supported dependency files found. CodeShield supports npm (package.json), NuGet (*.csproj), Python (requirements.txt), Java (pom.xml), Go (go.mod), Ruby (Gemfile.lock), and PHP (composer.json).");
                 }
 
                 // Fetch and parse each detected dependency file
@@ -179,6 +185,26 @@ namespace CodeShield.Services
                             {
                                 ParseRequirementsTxt(fileContent, packages);
                                 successfullyReadEcosystems.Add(Ecosystem.Python);
+                            }
+                            else if (fileName == "pom.xml")
+                            {
+                                ParsePomXml(fileContent, packages);
+                                successfullyReadEcosystems.Add(Ecosystem.Maven);
+                            }
+                            else if (fileName == "go.mod")
+                            {
+                                ParseGoMod(fileContent, packages);
+                                successfullyReadEcosystems.Add(Ecosystem.Go);
+                            }
+                            else if (fileName == "gemfile.lock" || fileName == "gemfile")
+                            {
+                                ParseGemfile(fileContent, packages);
+                                successfullyReadEcosystems.Add(Ecosystem.Ruby);
+                            }
+                            else if (fileName == "composer.json" || fileName == "composer.lock")
+                            {
+                                ParseComposerJson(fileContent, packages);
+                                successfullyReadEcosystems.Add(Ecosystem.PHP);
                             }
                         }
                     }
@@ -324,6 +350,188 @@ namespace CodeShield.Services
             catch
             {
                 // Ignore malformed requirements.txt
+            }
+        }
+
+        private void ParsePomXml(string content, List<DependencyPackage> packages)
+        {
+            try
+            {
+                var doc = XDocument.Parse(content);
+                var dependencies = doc.Descendants().Where(x => x.Name.LocalName.Equals("dependency", StringComparison.OrdinalIgnoreCase));
+
+                foreach (var dep in dependencies)
+                {
+                    var groupIdEl = dep.Elements().FirstOrDefault(x => x.Name.LocalName.Equals("groupId", StringComparison.OrdinalIgnoreCase));
+                    var artifactIdEl = dep.Elements().FirstOrDefault(x => x.Name.LocalName.Equals("artifactId", StringComparison.OrdinalIgnoreCase));
+                    var versionEl = dep.Elements().FirstOrDefault(x => x.Name.LocalName.Equals("version", StringComparison.OrdinalIgnoreCase));
+
+                    if (artifactIdEl != null)
+                    {
+                        string groupId = groupIdEl?.Value?.Trim() ?? string.Empty;
+                        string artifactId = artifactIdEl.Value.Trim();
+                        string packageName = !string.IsNullOrEmpty(groupId) ? $"{groupId}:{artifactId}" : artifactId;
+                        string version = versionEl?.Value?.Trim() ?? string.Empty;
+
+                        if (!version.StartsWith("${") && !string.IsNullOrWhiteSpace(packageName))
+                        {
+                            packages.Add(new DependencyPackage
+                            {
+                                PackageName = packageName,
+                                Version = version,
+                                Ecosystem = Ecosystem.Maven
+                            });
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Ignore malformed pom.xml
+            }
+        }
+
+        private void ParseGoMod(string content, List<DependencyPackage> packages)
+        {
+            try
+            {
+                var lines = content.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+                bool inRequireBlock = false;
+
+                foreach (var rawLine in lines)
+                {
+                    var line = rawLine.Trim();
+                    if (string.IsNullOrWhiteSpace(line) || line.StartsWith("//"))
+                    {
+                        continue;
+                    }
+
+                    if (line.StartsWith("require ("))
+                    {
+                        inRequireBlock = true;
+                        continue;
+                    }
+
+                    if (inRequireBlock && line == ")")
+                    {
+                        inRequireBlock = false;
+                        continue;
+                    }
+
+                    if (inRequireBlock || line.StartsWith("require "))
+                    {
+                        string text = line.StartsWith("require ") ? line.Substring(8).Trim() : line;
+                        var parts = text.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+                        if (parts.Length >= 2)
+                        {
+                            string pkgName = parts[0];
+                            string version = parts[1].TrimStart('v');
+                            packages.Add(new DependencyPackage
+                            {
+                                PackageName = pkgName,
+                                Version = version,
+                                Ecosystem = Ecosystem.Go
+                            });
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Ignore malformed go.mod
+            }
+        }
+
+        private void ParseGemfile(string content, List<DependencyPackage> packages)
+        {
+            try
+            {
+                var lines = content.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+                bool inSpecs = false;
+                var gemRegex = new Regex(@"^\s{4}([a-zA-Z0-9_\-]+)\s*\(([^)]+)\)", RegexOptions.Compiled);
+
+                foreach (var rawLine in lines)
+                {
+                    if (rawLine.Trim() == "specs:")
+                    {
+                        inSpecs = true;
+                        continue;
+                    }
+
+                    if (inSpecs)
+                    {
+                        if (!rawLine.StartsWith("    ") && !rawLine.StartsWith("\t") && !string.IsNullOrWhiteSpace(rawLine))
+                        {
+                            inSpecs = false;
+                        }
+                        else
+                        {
+                            var match = gemRegex.Match(rawLine);
+                            if (match.Success)
+                            {
+                                packages.Add(new DependencyPackage
+                                {
+                                    PackageName = match.Groups[1].Value,
+                                    Version = match.Groups[2].Value,
+                                    Ecosystem = Ecosystem.Ruby
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Ignore malformed Gemfile
+            }
+        }
+
+        private void ParseComposerJson(string content, List<DependencyPackage> packages)
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(content);
+                var root = doc.RootElement;
+
+                if (root.TryGetProperty("packages", out var pkgsArray) && pkgsArray.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var pkg in pkgsArray.EnumerateArray())
+                    {
+                        if (pkg.TryGetProperty("name", out var nameProp) && pkg.TryGetProperty("version", out var verProp))
+                        {
+                            string ver = verProp.GetString()?.TrimStart('v') ?? string.Empty;
+                            packages.Add(new DependencyPackage
+                            {
+                                PackageName = nameProp.GetString() ?? string.Empty,
+                                Version = ver,
+                                Ecosystem = Ecosystem.PHP
+                            });
+                        }
+                    }
+                    return;
+                }
+
+                if (root.TryGetProperty("require", out var reqObj) && reqObj.ValueKind == JsonValueKind.Object)
+                {
+                    foreach (var prop in reqObj.EnumerateObject())
+                    {
+                        if (prop.Name.ToLowerInvariant() != "php")
+                        {
+                            string rawVer = prop.Value.ValueKind == JsonValueKind.String ? (prop.Value.GetString() ?? string.Empty) : prop.Value.ToString();
+                            string cleanVer = Regex.Replace(rawVer, @"[^0-9\.]", "");
+                            packages.Add(new DependencyPackage
+                            {
+                                PackageName = prop.Name,
+                                Version = cleanVer,
+                                Ecosystem = Ecosystem.PHP
+                            });
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Ignore malformed composer file
             }
         }
 

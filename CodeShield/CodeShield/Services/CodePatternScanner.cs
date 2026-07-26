@@ -66,10 +66,29 @@ namespace CodeShield.Services
             if (detectedEcosystems.Contains(Ecosystem.Npm))
             {
                 targetExtensions.Add(".js");
+                targetExtensions.Add(".ts");
+                targetExtensions.Add(".jsx");
+                targetExtensions.Add(".tsx");
             }
             if (detectedEcosystems.Contains(Ecosystem.Python))
             {
                 targetExtensions.Add(".py");
+            }
+            if (detectedEcosystems.Contains(Ecosystem.Maven))
+            {
+                targetExtensions.Add(".java");
+            }
+            if (detectedEcosystems.Contains(Ecosystem.Go))
+            {
+                targetExtensions.Add(".go");
+            }
+            if (detectedEcosystems.Contains(Ecosystem.Ruby))
+            {
+                targetExtensions.Add(".rb");
+            }
+            if (detectedEcosystems.Contains(Ecosystem.PHP))
+            {
+                targetExtensions.Add(".php");
             }
 
             if (targetExtensions.Count == 0)
