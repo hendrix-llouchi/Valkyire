@@ -119,9 +119,9 @@ namespace CodeShield.Services
                 }
 
                 // Check file count threshold
-                if (files.Count > 1000)
+                if (files.Count > 5000)
                 {
-                    return (null, null, null, "This repository is too large to scan in full. CodeShield currently supports repositories up to 1000 files.");
+                    return (null, null, null, "This repository is too large to scan in full. CodeShield currently supports repositories up to 5000 files.");
                 }
 
                 // Scan for supported dependency files
