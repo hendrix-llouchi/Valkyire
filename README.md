@@ -11,7 +11,7 @@ Built with **ASP.NET Core (.NET 10)**, Razor Views, Entity Framework Core, and a
 ### 🔍 Repository Intake & Monorepo Support
 - Validates public GitHub repository URLs before any scanning begins.
 - Queries the **GitHub REST API** to recursively fetch the repository's file tree.
-- Enforces a **1,000-file threshold** to avoid scanning extremely large repositories.
+- Enforces a **5,000-file threshold** to avoid scanning extremely large repositories.
 - Detects supported ecosystems (`package.json`, `.csproj`, `requirements.txt`, `pom.xml`, `go.mod`, `Gemfile.lock`, `composer.json`) and fails fast with a clear message if none are found.
 - Supports **Monorepos**: Scans all supported ecosystems found in a repository and groups findings cleanly by ecosystem in the UI.
 
