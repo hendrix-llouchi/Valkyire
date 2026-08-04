@@ -602,6 +602,11 @@ namespace CodeShield.Services
                     }
                 }
 
+                if (response.StatusCode == HttpStatusCode.Unauthorized)
+                {
+                    return (null, "GitHub API authentication failed (401 Unauthorized). Please check your configured GitHub token.");
+                }
+
                 // Not found or access denied (returns NotFound or Forbidden)
                 if (response.StatusCode == HttpStatusCode.NotFound || response.StatusCode == HttpStatusCode.Forbidden)
                 {
