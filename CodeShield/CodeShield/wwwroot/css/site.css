@@ -931,10 +931,10 @@ body {
     background-color: var(--color-white) !important;
     border-radius: 0px !important;
     transition: all 0.1s ease;
-    padding: 16px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    padding: 14px 16px;
+    box-sizing: border-box;
+    max-width: 100%;
+    overflow: hidden;
 }
 
 .nb-dashboard-item:hover {

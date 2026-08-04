@@ -164,7 +164,7 @@ CodeShield is deliberately scoped. The following are **not** supported and will 
 
 | Boundary | Detail |
 |---|---|
-| **Ecosystems** | Only `npm`, `NuGet` (full), and `Python` (code scan only). No Maven, Go, Ruby, PHP, etc. |
+| **Ecosystems** | Full dependency & code pattern scanning for `npm`, `NuGet`, `Python`, `Maven`, `Go`, `Ruby`, and `PHP`. |
 | **No auto-fix** | AI suggestions are text only. CodeShield will never commit code or open Pull Requests. |
 | **Public repos only** | No OAuth flows, no private repository credentials. |
 | **On-demand only** | No background workers, webhooks, or scheduled scans. |
