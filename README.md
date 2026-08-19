@@ -1,8 +1,47 @@
-# 🛡️ CodeShield (Valkyire)
+# 🛡️ Valkyrie (CodeShield)
 
-> A modular, web-based security scanner that analyzes **public GitHub repositories** for vulnerable packages and insecure code patterns — with plain-English AI explanations and fix suggestions.
+[![GitHub Developer Program](https://img.shields.io/badge/GitHub_Developer_Program-Registered_Integration-181717?style=flat&logo=github&logoColor=white)](https://github.com/developer/register)
+[![GitHub REST API](https://img.shields.io/badge/GitHub_REST_API-v3-blue?style=flat&logo=github)](https://docs.github.com/en/rest)
+[![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4?style=flat&logo=dotnet)](https://dotnet.microsoft.com/download/dotnet/10.0)
+[![Vulnerability DB](https://img.shields.io/badge/Vulnerability_DB-OSV.dev-0052CC?style=flat)](https://osv.dev)
+[![UI Theme](https://img.shields.io/badge/Design_System-Neo--Brutalist-FFE600?style=flat&labelColor=000&color=FFE600)](https://github.com/hendrix-llouchi/Valkyire)
+
+> A modular, web-based security scanner built on the **GitHub REST API** that analyzes **public GitHub repositories** for vulnerable packages and insecure code patterns — with plain-English AI explanations and fix suggestions.
 
 Built with **ASP.NET Core (.NET 10)**, Razor Views, Entity Framework Core, and a custom **Neo-Brutalist Design System**.
+
+---
+
+## 🌐 GitHub REST API & Developer Program Integration
+
+Valkyrie is engineered as a zero-footprint, read-only integration powered by the **GitHub REST API v3**:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as Developer
+    participant App as Valkyrie (ASP.NET Core)
+    participant GitHub as GitHub REST API (v3)
+    participant OSV as OSV.dev Database
+    participant AI as AgentRouter (LLM)
+
+    User->>App: Submits Public GitHub Repository URL
+    App->>GitHub: GET /repos/{owner}/{repo} (Validates existence & default branch)
+    App->>GitHub: GET /repos/{owner}/{repo}/git/trees/{branch}?recursive=1 (Ingests file tree)
+    App->>GitHub: GET /repos/{owner}/{repo}/contents/{manifest} (Fetches dependency files)
+    App->>OSV: Queries package versions in batch against CVE database
+    App->>GitHub: GET /repos/{owner}/{repo}/contents/{source} (Fetches scoped code files)
+    App->>App: Runs static regex pattern scanning (Secrets, SQLi, Configs, HTTP)
+    App->>AI: Requests plain-English remediation & secure code snippets
+    App-->>User: Renders interactive Neo-Brutalist Security Report with Grade (A-F)
+```
+
+### GitHub API Capabilities:
+- **Repository Verification & Branch Discovery**: Queries `GET /repos/{owner}/{repo}` to confirm the repository is public and dynamically discover its default branch.
+- **Single-Call Recursive File Tree Ingestion**: Queries `GET /repos/{owner}/{repo}/git/trees/{defaultBranch}?recursive=1` to map the entire repository hierarchy in a single network round-trip.
+- **Manifest Ingestion**: Fetches dependency manifests (`package.json`, `.csproj`, `requirements.txt`, `pom.xml`, `go.mod`, `Gemfile.lock`, `composer.json`) directly via the Contents API.
+- **Throttled Code Inspection**: Concurrently fetches source files via `SemaphoreSlim(10)` to safely inspect code patterns without triggering secondary rate limits.
+- **Resilient Rate Limit Handling**: Supports authenticated requests via Personal Access Tokens (`GitHub:Token`) to scale capacity up to 5,000 req/hr with built-in `X-RateLimit-Remaining` auditing.
 
 ---
 
@@ -62,7 +101,7 @@ Built with **ASP.NET Core (.NET 10)**, Razor Views, Entity Framework Core, and a
 | **Database** | SQL Server LocalDB (dev) / SQL Server (prod) |
 | **ORM** | Entity Framework Core 10 (Code-First) |
 | **Auth** | ASP.NET Core Identity (cookie-based sessions) |
-| **GitHub API** | GitHub REST API v3 |
+| **GitHub API** | GitHub REST API v3 (Git Trees & Contents) |
 | **Vulnerability DB** | OSV.dev API (free, public, no key required) |
 | **AI Explanations** | AgentRouter (Anthropic-compatible endpoint) |
 
@@ -160,12 +199,12 @@ erDiagram
 
 ## 🔒 Scope Boundaries
 
-CodeShield is deliberately scoped. The following are **not** supported and will not be added without an explicit design decision:
+Valkyrie is deliberately scoped. The following are **not** supported and will not be added without an explicit design decision:
 
 | Boundary | Detail |
 |---|---|
 | **Ecosystems** | Full dependency & code pattern scanning for `npm`, `NuGet`, `Python`, `Maven`, `Go`, `Ruby`, and `PHP`. |
-| **No auto-fix** | AI suggestions are text only. CodeShield will never commit code or open Pull Requests. |
+| **No auto-fix** | AI suggestions are text only. Valkyrie will never commit code or open Pull Requests. |
 | **Public repos only** | No OAuth flows, no private repository credentials. |
 | **On-demand only** | No background workers, webhooks, or scheduled scans. |
 | **Single role** | No admin dashboard or multi-role permission system. |
@@ -181,8 +220,8 @@ CodeShield is deliberately scoped. The following are **not** supported and will 
 
 ### 1. Clone the Repository
 ```bash
-git clone <repository-url>
-cd CodeShield/CodeShield
+git clone https://github.com/hendrix-llouchi/Valkyire.git
+cd Valkyire/CodeShield/CodeShield
 ```
 
 ### 2. Configure User Secrets
