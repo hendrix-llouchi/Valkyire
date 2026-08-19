@@ -98,11 +98,12 @@ namespace CodeShield.Services
                 return ("AI analysis could not run: Groq API key is missing. Please add 'Groq__ApiKey' or 'Grok__ApiKey' in your Azure App Settings.", null);
             }
 
+            string model = _configuration["Groq:Model"] ?? "openai/gpt-oss-120b";
             var requestUri = "https://api.groq.com/openai/v1/chat/completions";
 
             var payloadObj = new
             {
-                model = "llama-3.3-70b-versatile",
+                model = model,
                 temperature = 0.2,
                 response_format = new { type = "json_object" },
                 messages = new[]
