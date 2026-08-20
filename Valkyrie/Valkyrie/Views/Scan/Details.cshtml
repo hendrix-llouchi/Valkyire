@@ -1,0 +1,405 @@
+﻿@model Valkyrie.Models.ScanResult
+@{
+    ViewData["Title"] = $"Scan: {Model.RepositoryName}";
+    var gradeClass = (Model.SecurityGrade?.StartsWith("A") == true) || (Model.SecurityGrade?.StartsWith("B") == true) ? "nb-grade-a" :
+                     (Model.SecurityGrade?.StartsWith("C") == true) ? "nb-grade-c" : "nb-grade-d";
+
+    var detectedEcosystemList = !string.IsNullOrEmpty(Model.EcosystemsDetected)
+        ? Model.EcosystemsDetected.Split(", ").Select(s => Enum.Parse<Valkyrie.Models.Ecosystem>(s)).ToList()
+        : new List<Valkyrie.Models.Ecosystem>();
+}
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+            <!-- Scan Metadata Card -->
+            <div class="nb-card p-4 mb-4">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="nb-grade-badge @gradeClass fw-bold" style="width: 60px; height: 60px; font-size: 1.5rem; box-shadow: 3px 3px 0px var(--color-black) !important;">@Model.SecurityGrade</div>
+                        <div>
+                            <div class="nb-mono text-muted small" style="font-size: 0.75rem;">Repository Scan</div>
+                            <h2 class="nb-heading mb-1" style="font-size: 1.5rem;">@Model.RepositoryName</h2>
+                            <p class="mb-0 nb-mono text-secondary small">
+                                Scanned on @Model.ScannedAt.ToLocalTime().ToString("MMM dd, yyyy h:mm tt")
+                            </p>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button onclick="window.print()" class="nb-btn nb-btn-secondary py-2 px-3 fs-6" style="box-shadow: 2.5px 2.5px 0px var(--color-black) !important;">
+                            📄 EXPORT REPORT (PDF)
+                        </button>
+                        <a asp-controller="Scan" asp-action="Index" asp-route-repositoryUrl="@Model.RepositoryUrl" class="nb-btn nb-btn-primary py-2 px-3 fs-6" style="box-shadow: 2.5px 2.5px 0px var(--color-black) !important;">
+                            🔄 Rescan
+                        </a>
+                        <a asp-controller="Scan" asp-action="History" class="nb-btn nb-btn-secondary py-2 px-3 fs-6" style="box-shadow: 2.5px 2.5px 0px var(--color-black) !important;">
+                            Back to History
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="mt-4 pt-3 border-top border-dark">
+                    <div class="row g-3 text-center text-md-start">
+                        <div class="col-6 col-md-4">
+                            <span class="d-block nb-mono text-muted small text-uppercase" style="font-size: 0.75rem;">Repository URL</span>
+                            <a href="@Model.RepositoryUrl" target="_blank" class="fw-bold text-dark text-truncate d-block small nb-mono mt-1" style="max-width: 100%;">
+                                @Model.RepositoryUrl
+                            </a>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <span class="d-block nb-mono text-muted small text-uppercase" style="font-size: 0.75rem;">Total Issues Found</span>
+                            <span class="fw-bold @(Model.TotalIssuesFound > 0 ? "text-danger" : "text-success") small nb-heading d-block mt-1" style="font-size: 0.95rem;">
+                                @Model.TotalIssuesFound @(Model.TotalIssuesFound == 1 ? "issue" : "issues")
+                            </span>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <span class="d-block nb-mono text-muted small text-uppercase mb-1" style="font-size: 0.75rem;">Ecosystems Analyzed</span>
+                            <div>
+                                @foreach (var eco in detectedEcosystemList)
+                                {
+                                    var badgeClass = eco == Valkyrie.Models.Ecosystem.Npm ? "adventurer-theme" :
+                                                     eco == Valkyrie.Models.Ecosystem.NuGet ? "rookie-theme" : "nb-badge-light";
+                                    <span class="nb-badge @badgeClass font-monospace" style="font-size: 0.7rem; box-shadow: none; border-width: 1px !important; padding: 4px 8px;">@eco</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @if (Model.Status == Valkyrie.Models.ScanStatus.PartialFailure)
+            {
+                <div class="alert nb-alert-warning p-4 mb-4 d-flex align-items-start" id="osv-warning-banner">
+                    <span class="fs-3 me-3">⚠️</span>
+                    <div>
+                        <h5 class="alert-heading nb-heading mb-1" style="font-size: 1.1rem;">Partial Scan Results</h5>
+                        <p class="mb-0 small text-uppercase" style="font-size: 0.8rem; font-weight: 600;">Some packages could not be checked due to a temporary issue — try rescanning for complete results.</p>
+                    </div>
+                </div>
+            }
+
+            <!-- Tabs Control -->
+            <ul class="nav nb-nav-pills mb-4" id="scanTabs" role="tablist">
+                <li class="nav-item" role="presentation" style="flex: 1;">
+                    <button class="nav-link w-100 active" id="packages-tab" data-bs-toggle="pill" data-bs-target="#packages-pane" type="button" role="tab" aria-controls="packages-pane" aria-selected="true">
+                        📦 Package Dependencies
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation" style="flex: 1;">
+                    <button class="nav-link w-100" id="issues-tab" data-bs-toggle="pill" data-bs-target="#issues-pane" type="button" role="tab" aria-controls="issues-pane" aria-selected="false">
+                        🔍 Code Issues
+                    </button>
+                </li>
+            </ul>
+
+            <!-- Tabs Content -->
+            <div class="tab-content" id="scanTabsContent">
+                <!-- Packages Pane -->
+                <div class="tab-pane fade show active" id="packages-pane" role="tabpanel" aria-labelledby="packages-tab">
+                    @if (detectedEcosystemList.Count > 0)
+                    {
+                        @foreach (var ecosystem in detectedEcosystemList)
+                        {
+                            var ecosystemName = ecosystem switch
+                            {
+                                Valkyrie.Models.Ecosystem.Npm => "npm",
+                                Valkyrie.Models.Ecosystem.NuGet => "NuGet",
+                                Valkyrie.Models.Ecosystem.Python => "Python (PyPI)",
+                                Valkyrie.Models.Ecosystem.Maven => "Java (Maven)",
+                                Valkyrie.Models.Ecosystem.Go => "Go",
+                                Valkyrie.Models.Ecosystem.Ruby => "RubyGems",
+                                Valkyrie.Models.Ecosystem.PHP => "PHP (Packagist)",
+                                _ => ecosystem.ToString()
+                            };
+                            var icon = ecosystem switch
+                            {
+                                Valkyrie.Models.Ecosystem.Npm => "🟢",
+                                Valkyrie.Models.Ecosystem.NuGet => "🔵",
+                                Valkyrie.Models.Ecosystem.Python => "🐍",
+                                Valkyrie.Models.Ecosystem.Maven => "☕",
+                                Valkyrie.Models.Ecosystem.Go => "🐹",
+                                Valkyrie.Models.Ecosystem.Ruby => "💎",
+                                Valkyrie.Models.Ecosystem.PHP => "🐘",
+                                _ => "📦"
+                            };
+                            var ecosystemPackages = Model.VulnerablePackages?.Where(p => p.Ecosystem == ecosystem).ToList() ?? new List<Valkyrie.Models.VulnerablePackage>();
+
+                            <div class="nb-card p-4 mb-4">
+                                <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom border-dark">
+                                    <h5 class="nb-heading mb-0 d-flex align-items-center gap-2">
+                                        <span>@icon</span> 
+                                        @ecosystemName Packages
+                                    </h5>
+                                    <span class="nb-badge nb-badge-light py-1 px-3 fs-7">@ecosystemPackages.Count vulnerable packages</span>
+                                </div>
+
+                                @{
+                                    var vulnPackageCount = ecosystemPackages.Count;
+
+                                    <div class="p-3 mb-3 @(vulnPackageCount > 0 ? "nb-alert-danger text-danger" : "nb-alert-success text-success")">
+                                        <p class="mb-0 small fw-bold">
+                                            @if (vulnPackageCount > 0)
+                                            {
+                                                <span>⚠️ Attention required: @vulnPackageCount @ecosystemName dependencies have known security risks.</span>
+                                            }
+                                            else
+                                            {
+                                                <span>✅ No package vulnerabilities found in @ecosystemName dependencies.</span>
+                                            }
+                                        </p>
+                                    </div>
+
+                                    @if (vulnPackageCount > 0)
+                                    {
+                                        <div class="d-flex flex-column gap-3">
+                                            @foreach (var pkg in ecosystemPackages)
+                                            {
+                                                <div class="p-3 border border-2 border-dark bg-white">
+                                                    <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                                                        <h6 class="nb-heading mb-0 text-dark small">
+                                                            📦 @pkg.PackageName
+                                                        </h6>
+                                                        <span class="nb-badge nb-badge-light font-monospace py-1 px-2 fs-7" style="box-shadow: none;">Version: @pkg.InstalledVersion</span>
+                                                    </div>
+                                                    
+                                                    <div class="d-flex flex-column gap-2">
+                                                        @{
+                                                            var severityClass = pkg.Severity switch
+                                                            {
+                                                                Valkyrie.Models.Severity.Critical => "nb-badge typical-theme",
+                                                                Valkyrie.Models.Severity.High => "nb-badge typical-theme",
+                                                                Valkyrie.Models.Severity.Medium => "nb-badge adventurer-theme",
+                                                                _ => "nb-badge nb-badge-light"
+                                                            };
+                                                            var borderClass = pkg.Severity switch
+                                                            {
+                                                                Valkyrie.Models.Severity.Critical => "border-danger",
+                                                                Valkyrie.Models.Severity.High => "border-warning",
+                                                                Valkyrie.Models.Severity.Medium => "border-info",
+                                                                _ => "border-secondary"
+                                                            };
+                                                        }
+                                                        
+                                                        <div class="p-3 bg-white border border-2 border-dark border-start border-5 @borderClass shadow-sm" style="border-left-width: 6px !important;">
+                                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                                <span class="fw-bold font-monospace text-secondary small">Vulnerability Details</span>
+                                                                <span class="@severityClass py-1 px-2 font-monospace" style="font-size: 0.7rem; box-shadow: none;">@pkg.Severity</span>
+                                                            </div>
+                                                            <p class="mb-2 text-secondary small">@pkg.Description</p>
+                                                            
+                                                            <!-- AI Explanation and Fix Suggestion -->
+                                                            @if (!string.IsNullOrEmpty(pkg.AiExplanation) || !string.IsNullOrEmpty(pkg.AiFixSuggestion))
+                                                            {
+                                                                <div class="mt-3 pt-3 border-top border-dark">
+                                                                    @if (!string.IsNullOrEmpty(pkg.AiExplanation))
+                                                                    {
+                                                                        <div class="nb-ai-box nb-ai-box-info mb-2">
+                                                                            <span class="d-block nb-heading mb-1 text-start" style="font-size: 0.8rem;">🤖 AI Explanation</span>
+                                                                            <p class="mb-0 text-dark small" style="font-weight: 500;">@pkg.AiExplanation</p>
+                                                                        </div>
+                                                                    }
+                                                                    @if (!string.IsNullOrEmpty(pkg.AiFixSuggestion))
+                                                                    {
+                                                                        <div class="nb-ai-box nb-ai-box-success">
+                                                                            <span class="d-block nb-heading mb-1 text-start" style="font-size: 0.8rem;">💡 Suggested Fix</span>
+                                                                            <p class="mb-0 text-dark small" style="font-weight: 500;">@pkg.AiFixSuggestion</p>
+                                                                        </div>
+                                                                    }
+                                                                </div>
+                                                            }
+                                                            else
+                                                            {
+                                                                <div class="mt-3 pt-2 border-top border-dark text-muted small d-flex align-items-center gap-1 nb-mono">
+                                                                    <span>🤖</span> <em>AI explanation unavailable for this issue.</em>
+                                                                </div>
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                }
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="nb-card p-5 text-center text-muted">
+                            <span class="fs-1 d-block mb-3">📁</span>
+                            <h5 class="nb-heading text-dark">No Supported Ecosystems Detected</h5>
+                            <p class="nb-mono small mb-0">This repository does not contain supported package files (e.g., package.json, *.csproj, requirements.txt).</p>
+                        </div>
+                    }
+                </div>
+ 
+                <!-- Issues Pane -->
+                <div class="tab-pane fade" id="issues-pane" role="tabpanel" aria-labelledby="issues-tab">
+                    @if (Model.CodeIssues == null || Model.CodeIssues.Count == 0)
+                    {
+                        <div class="nb-card p-5 text-center text-muted">
+                            <span class="fs-1 d-block mb-3">✅</span>
+                            <h5 class="nb-heading text-dark">No Insecure Code Patterns Found</h5>
+                            <p class="nb-mono small mb-0 text-muted">All scanned source files look secure. No hardcoded secrets, SQL injection risks, exposed configs, or insecure HTTP URLs were found.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="nb-card p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom border-dark">
+                                <h5 class="nb-heading mb-0 d-flex align-items-center gap-2">
+                                    <span>🔍</span> Code Security Issues
+                                </h5>
+                                <span class="nb-badge py-1 px-3 fs-7">@Model.CodeIssues.Count issues found</span>
+                            </div>
+                            
+                            <div class="d-flex flex-column gap-3">
+                                @foreach (var issue in Model.CodeIssues)
+                                {
+                                    var severityClass = issue.Severity switch
+                                    {
+                                        Valkyrie.Models.Severity.Critical => "nb-badge typical-theme",
+                                        Valkyrie.Models.Severity.High => "nb-badge typical-theme",
+                                        Valkyrie.Models.Severity.Medium => "nb-badge adventurer-theme",
+                                        _ => "nb-badge nb-badge-light"
+                                    };
+                                    var borderClass = issue.Severity switch
+                                    {
+                                        Valkyrie.Models.Severity.Critical => "border-danger",
+                                        Valkyrie.Models.Severity.High => "border-warning",
+                                        Valkyrie.Models.Severity.Medium => "border-info",
+                                        _ => "border-secondary"
+                                    };
+
+                                    <div class="p-3 border border-2 border-dark bg-white border-start border-5 @borderClass shadow-sm" style="border-left-width: 6px !important;">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <div>
+                                                <h6 class="nb-heading mb-1 text-dark small">
+                                                    📄 @issue.FileName
+                                                </h6>
+                                                <span class="nb-mono text-muted small" style="font-size: 0.8rem;">Line @issue.LineNumber &bull; <strong class="text-secondary">@issue.IssueType</strong></span>
+                                            </div>
+                                            <span class="@severityClass py-1 px-2 font-monospace" style="font-size: 0.7rem; box-shadow: none;">@issue.Severity</span>
+                                        </div>
+                                        
+                                        <!-- Code Snippet -->
+                                        <div class="nb-code-box mb-3 text-start" style="overflow-x: auto; white-space: pre;"><code>@issue.CodeSnippet</code></div>
+                                        
+                                        <!-- AI Explanation and Fix Suggestion -->
+                                        @if (!string.IsNullOrEmpty(issue.AiExplanation) || !string.IsNullOrEmpty(issue.AiFixSuggestion))
+                                        {
+                                            <div class="mt-3 pt-3 border-top border-dark">
+                                                @if (!string.IsNullOrEmpty(issue.AiExplanation))
+                                                {
+                                                    <div class="nb-ai-box nb-ai-box-info mb-2 text-start">
+                                                        <span class="d-block nb-heading mb-1" style="font-size: 0.8rem;">🤖 AI Explanation</span>
+                                                        <p class="mb-0 text-dark small" style="font-weight: 500;">@issue.AiExplanation</p>
+                                                    </div>
+                                                }
+                                                @if (!string.IsNullOrEmpty(issue.AiFixSuggestion))
+                                                {
+                                                    <div class="nb-ai-box nb-ai-box-success text-start">
+                                                        <span class="d-block nb-heading mb-1" style="font-size: 0.8rem;">💡 Suggested Fix</span>
+                                                        <p class="mb-0 text-dark small" style="font-weight: 500;">@issue.AiFixSuggestion</p>
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="mt-3 pt-2 border-top border-dark text-muted small d-flex align-items-center gap-1 nb-mono">
+                                                <span>🤖</span> <em>AI explanation unavailable for this issue.</em>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    @@media print {
+        header, footer, nav, .navbar, #scan-form-card, #scan-loader, .nav-pills, .nb-btn, button, form, .btn {
+            display: none !important;
+        }
+        body, html {
+            background: #ffffff !important;
+            color: #000000 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        .container, .col-lg-9, .col-lg-10, .row {
+            max-width: 100% !important;
+            width: 100% !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+        .tab-content > .tab-pane {
+            display: block !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+            height: auto !important;
+            overflow: visible !important;
+        }
+        #packages-pane::before {
+            content: "PACKAGE DEPENDENCIES";
+            display: block;
+            font-size: 1.2rem;
+            font-weight: 800;
+            margin-top: 1rem;
+            margin-bottom: 0.75rem;
+            border-bottom: 2px solid #000;
+            padding-bottom: 0.25rem;
+        }
+        #issues-pane::before {
+            content: "CODE SECURITY ISSUES";
+            display: block;
+            font-size: 1.2rem;
+            font-weight: 800;
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            border-bottom: 2px solid #000;
+            padding-bottom: 0.25rem;
+        }
+        #files-pane::before {
+            content: "REPOSITORY FILE LIST";
+            display: block;
+            font-size: 1.2rem;
+            font-weight: 800;
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            border-bottom: 2px solid #000;
+            padding-bottom: 0.25rem;
+        }
+        #files-pane div[style*="max-height"] {
+            max-height: none !important;
+            overflow: visible !important;
+        }
+        .nb-card {
+            box-shadow: none !important;
+            border: 1px solid #000000 !important;
+            margin-bottom: 1rem !important;
+            break-inside: auto;
+            page-break-inside: auto;
+        }
+        .p-4, .p-3, .p-2, .p-5 {
+            break-inside: auto !important;
+            page-break-inside: auto !important;
+        }
+        .border-bottom.border-dark.p-3, .list-group-item, .nb-card-body {
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+        .nb-ai-box {
+            border: 1px solid #333 !important;
+            background-color: #f8f9fa !important;
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+    }
+</style>

@@ -1,4 +1,4 @@
-# 🛡️ Valkyrie (CodeShield)
+﻿# 🛡️ Valkyrie (Valkyrie)
 
 [![GitHub Developer Program](https://img.shields.io/badge/GitHub_Developer_Program-Registered_Integration-181717?style=flat&logo=github&logoColor=white)](https://github.com/developer/register)
 [![GitHub REST API](https://img.shields.io/badge/GitHub_REST_API-v3-blue?style=flat&logo=github)](https://docs.github.com/en/rest)
@@ -118,8 +118,8 @@ sequenceDiagram
 ## 📂 Project Structure
 
 ```
-CodeShield/
-└── CodeShield/
+Valkyrie/
+└── Valkyrie/
     ├── Controllers/
     │   ├── AccountController.cs      # Register, Login, Logout
     │   ├── DashboardController.cs    # Scan history overview
@@ -221,7 +221,7 @@ Valkyrie is deliberately scoped. The following are **not** supported and will no
 ### 1. Clone the Repository
 ```bash
 git clone https://github.com/hendrix-llouchi/Valkyire.git
-cd Valkyire/CodeShield/CodeShield
+cd Valkyire/Valkyrie/Valkyrie
 ```
 
 ### 2. Configure User Secrets
@@ -234,7 +234,7 @@ dotnet user-secrets init
 
 # SQL Server LocalDB connection string
 dotnet user-secrets set "ConnectionStrings:DefaultConnection" \
-  "Server=(localdb)\mssqllocaldb;Database=CodeShieldDb;Trusted_Connection=True;MultipleActiveResultSets=true"
+  "Server=(localdb)\mssqllocaldb;Database=ValkyrieDb;Trusted_Connection=True;MultipleActiveResultSets=true"
 
 # GitHub Personal Access Token (avoids anonymous rate limits)
 dotnet user-secrets set "GitHub:Token" "your_github_pat_here"
@@ -270,7 +270,7 @@ The app will be available at `https://localhost:7147` or `http://localhost:5213`
 Execute the unit test suite using the .NET CLI:
 
 ```bash
-dotnet test CodeShield.Tests/CodeShield.Tests.csproj
+dotnet test Valkyrie.Tests/Valkyrie.Tests.csproj
 ```
 
 ---
