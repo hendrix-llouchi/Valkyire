@@ -1,10 +1,10 @@
-# AGENTS.md — CodeShield Project Rules
+﻿# AGENTS.md — Valkyrie Project Rules
 
 These rules apply to every AI agent working in this repository (Antigravity, or any other compatible tool). Read this fully before making changes. These rules exist to keep the build aligned with the project's planning documents (see `/docs` if present, or ask the human collaborator for the SRS).
 
 ## Project Summary
 
-CodeShield is a web-based security tool that scans GitHub repositories for vulnerable
+Valkyrie is a web-based security tool that scans GitHub repositories for vulnerable
 packages and insecure code patterns, then uses AI to explain each risk in plain English
 and suggest a fix. Built with ASP.NET Core (C#), individual project, solo developer.
 

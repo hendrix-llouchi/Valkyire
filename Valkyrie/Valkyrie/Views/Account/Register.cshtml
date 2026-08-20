@@ -1,0 +1,155 @@
+﻿@model Valkyrie.Models.RegisterViewModel
+@{
+    ViewData["Title"] = "Register";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="nb-card p-4 p-sm-5">
+                <div class="text-center mb-4">
+                    <img src="~/images/logo.jpg" alt="Valkyrie Logo" class="form-card-logo border border-3 border-dark rounded-0 mb-3" />
+                    <h2 class="nb-heading mb-1">CREATE ACCOUNT</h2>
+                    <p class="nb-mono text-muted small text-uppercase">Protect your repository against safety risks</p>
+                </div>
+                
+                <form asp-controller="Account" asp-action="Register" method="post" novalidate>
+                    @if (!ViewData.ModelState.IsValid && ViewData.ModelState[string.Empty]?.Errors.Count > 0)
+                    {
+                        <div class="alert nb-alert-danger p-3 mb-4" role="alert">
+                            <div asp-validation-summary="ModelOnly" class="mb-0"></div>
+                        </div>
+                    }
+
+                    <div class="mb-3">
+                        <label asp-for="Username" class="form-label nb-mono fw-bold text-dark small text-uppercase"></label>
+                        <input asp-for="Username" class="form-control nb-input" placeholder="Choose a username" aria-required="true" />
+                        <span asp-validation-for="Username" class="text-danger nb-mono small mt-1 d-block"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Password" class="form-label nb-mono fw-bold text-dark small text-uppercase"></label>
+                        <div class="nb-input-group">
+                            <input asp-for="Password" type="password" id="passwordInput" class="form-control nb-input" placeholder="••••••••" aria-required="true" />
+                            <button type="button" class="nb-password-toggle" id="togglePasswordBtn" aria-label="Toggle password visibility">
+                                <span id="togglePasswordIcon">👁️</span>
+                            </button>
+                        </div>
+                        <span asp-validation-for="Password" class="text-danger nb-mono small mt-1 d-block"></span>
+                        
+                        <div class="nb-password-checklist" id="passwordChecklist">
+                            <div class="nb-requirement-item" id="reqLength">
+                                <span class="req-icon" id="reqLengthIcon">✕</span>
+                                <span>At least 8 characters</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="ConfirmPassword" class="form-label nb-mono fw-bold text-dark small text-uppercase"></label>
+                        <div class="nb-input-group">
+                            <input asp-for="ConfirmPassword" type="password" id="confirmPasswordInput" class="form-control nb-input" placeholder="••••••••" aria-required="true" />
+                            <button type="button" class="nb-password-toggle" id="toggleConfirmPasswordBtn" aria-label="Toggle password visibility">
+                                <span id="toggleConfirmPasswordIcon">👁️</span>
+                            </button>
+                        </div>
+                        <span asp-validation-for="ConfirmPassword" class="text-danger nb-mono small mt-1 d-block"></span>
+                        
+                        <div class="nb-password-checklist d-none" id="confirmPasswordChecklist">
+                            <div class="nb-requirement-item" id="reqMatch">
+                                <span class="req-icon" id="reqMatchIcon">✕</span>
+                                <span>Passwords match</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="w-100 nb-btn nb-btn-primary mb-3" type="submit">Create Account</button>
+                    
+                    <div class="text-center mt-3">
+                        <p class="nb-mono small mb-0">
+                            Already have an account? <a asp-controller="Account" asp-action="Login" class="text-decoration-none fw-bold nb-nav-link text-primary">Log in instead</a>.
+                        </p>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        $(document).ready(function () {
+            // Toggle password visibility
+            $('#togglePasswordBtn').click(function () {
+                const passwordInput = $('#passwordInput');
+                const icon = $('#togglePasswordIcon');
+                if (passwordInput.attr('type') === 'password') {
+                    passwordInput.attr('type', 'text');
+                    icon.text('🙈');
+                } else {
+                    passwordInput.attr('type', 'password');
+                    icon.text('👁️');
+                }
+            });
+
+            $('#toggleConfirmPasswordBtn').click(function () {
+                const confirmInput = $('#confirmPasswordInput');
+                const icon = $('#toggleConfirmPasswordIcon');
+                if (confirmInput.attr('type') === 'password') {
+                    confirmInput.attr('type', 'text');
+                    icon.text('🙈');
+                } else {
+                    confirmInput.attr('type', 'password');
+                    icon.text('👁️');
+                }
+            });
+
+            // Real-time password length validation
+            const passwordInput = $('#passwordInput');
+            const reqLength = $('#reqLength');
+            const reqLengthIcon = $('#reqLengthIcon');
+
+            passwordInput.on('input', function () {
+                const val = $(this).val();
+                if (val.length >= 8) {
+                    reqLength.addClass('valid');
+                    reqLengthIcon.text('✓');
+                } else {
+                    reqLength.removeClass('valid');
+                    reqLengthIcon.text('✕');
+                }
+                checkPasswordsMatch();
+            });
+
+            // Real-time matching validation
+            const confirmInput = $('#confirmPasswordInput');
+            const confirmChecklist = $('#confirmPasswordChecklist');
+            const reqMatch = $('#reqMatch');
+            const reqMatchIcon = $('#reqMatchIcon');
+
+            confirmInput.on('input', function () {
+                if ($(this).val().length > 0) {
+                    confirmChecklist.removeClass('d-none');
+                } else {
+                    confirmChecklist.addClass('d-none');
+                }
+                checkPasswordsMatch();
+            });
+
+            function checkPasswordsMatch() {
+                const pass = passwordInput.val();
+                const confirmPass = confirmInput.val();
+                if (confirmPass.length > 0) {
+                    if (pass === confirmPass) {
+                        reqMatch.addClass('valid');
+                        reqMatchIcon.text('✓');
+                    } else {
+                        reqMatch.removeClass('valid');
+                        reqMatchIcon.text('✕');
+                    }
+                }
+            }
+        });
+    </script>
+}

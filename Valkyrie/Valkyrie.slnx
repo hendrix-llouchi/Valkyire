@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Valkyrie/Valkyrie.csproj" />
+  <Project Path="Valkyrie.Tests/Valkyrie.Tests.csproj" />
+</Solution>
