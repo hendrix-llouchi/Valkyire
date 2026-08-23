@@ -1,10 +1,11 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Valkyrie.Models;
@@ -14,6 +15,7 @@ using Valkyrie.Data;
 namespace Valkyrie.Controllers
 {
     [Authorize]
+    [EnableRateLimiting("scan")]
     public class ScanController : Controller
     {
         private readonly IGitHubService _gitHubService;
@@ -23,6 +25,7 @@ namespace Valkyrie.Controllers
         private readonly IConfiguration _configuration;
         private readonly ApplicationDbContext _context;
         private readonly UserManager<IdentityUser> _userManager;
+        private readonly ILogger<ScanController> _logger;
 
         public ScanController(
             IGitHubService gitHubService, 
@@ -31,7 +34,8 @@ namespace Valkyrie.Controllers
             ICodePatternScanner codePatternScanner,
             IConfiguration configuration,
             ApplicationDbContext context,
-            UserManager<IdentityUser> userManager)
+            UserManager<IdentityUser> userManager,
+            ILogger<ScanController> logger)
         {
             _gitHubService = gitHubService;
             _osvService = osvService;
@@ -40,6 +44,7 @@ namespace Valkyrie.Controllers
             _configuration = configuration;
             _context = context;
             _userManager = userManager;
+            _logger = logger;
         }
 
         private class AiTaskWrapper
