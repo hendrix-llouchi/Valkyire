@@ -1,5 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
+using System.Threading.RateLimiting;
 using Valkyrie.Data;
 using Valkyrie.Services;
 
@@ -12,6 +14,38 @@ builder.Services.AddHttpClient<IOsvService, OsvService>();
 builder.Services.AddHttpClient<IAiExplanationService, AiExplanationService>();
 builder.Services.AddTransient<ICodePatternScanner, CodePatternScanner>();
 
+// Add Health Checks for Azure / Cloud Probes
+builder.Services.AddHealthChecks();
+
+// Register Inbound Rate Limiting (Layer 9)
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    // Strict policy for scan execution (10 requests per minute per IP)
+    options.AddPolicy("scan", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 2
+            }));
+
+    // Strict policy for login/register authentication attempts (15 requests per minute per IP)
+    options.AddPolicy("auth", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 15,
+                Window = TimeSpan.FromMinutes(1),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0
+            }));
+});
 
 // Register ApplicationDbContext
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
@@ -58,11 +92,15 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();
 app.UseRouting();
+
+app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapHealthChecks("/health");
 app.MapStaticAssets();
 
 app.MapControllerRoute(
@@ -70,15 +108,18 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}")
     .WithStaticAssets();
 
-// Seed default user and run migrations
+// Seed default user and run migrations with production-safe diagnostics
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
+    var logger = services.GetRequiredService<ILogger<Program>>();
     try
     {
         // Migrate database
         var dbContext = services.GetRequiredService<ApplicationDbContext>();
+        logger.LogInformation("Applying database migrations if needed...");
         dbContext.Database.Migrate();
+        logger.LogInformation("Database migration completed successfully.");
 
         var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
         var defaultUsername = "admin";
@@ -89,17 +130,17 @@ using (var scope = app.Services.CreateScope())
             var result = userManager.CreateAsync(user, "Admin123!").Result;
             if (result.Succeeded)
             {
-                Console.WriteLine("Successfully seeded default user: admin / Admin123!");
+                logger.LogInformation("Successfully seeded default user: {Username}", defaultUsername);
             }
             else
             {
-                Console.WriteLine("Error seeding user: " + string.Join(", ", result.Errors.Select(e => e.Description)));
+                logger.LogWarning("Error seeding user: {Errors}", string.Join(", ", result.Errors.Select(e => e.Description)));
             }
         }
     }
     catch (Exception ex)
     {
-        Console.WriteLine("An error occurred while seeding the database: " + ex.Message);
+        logger.LogError(ex, "An error occurred during database migration or default user seeding.");
     }
 }
 

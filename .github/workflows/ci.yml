@@ -1,0 +1,32 @@
+name: Valkyrie CI
+
+on:
+  push:
+    branches: [ "main", "feature/**" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Setup .NET 10
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Restore Dependencies
+      run: dotnet restore Valkyrie/Valkyrie.slnx
+
+    - name: Build Solution (Release)
+      run: dotnet build Valkyrie/Valkyrie.slnx --configuration Release --no-restore
+
+    - name: Run Unit Tests
+      run: dotnet test Valkyrie/Valkyrie.slnx --configuration Release --no-build --verbosity normal
+
+    - name: Publish Artifact Verification
+      run: dotnet publish Valkyrie/Valkyrie/Valkyrie.csproj --configuration Release --no-build --output ./publish
