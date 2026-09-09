@@ -1,6 +1,10 @@
-﻿# AGENTS.md — Valkyrie Project Rules
+# AGENTS.md — Valkyrie Project Rules
 
-These rules apply to every AI agent working in this repository (Antigravity, or any other compatible tool). Read this fully before making changes. These rules exist to keep the build aligned with the project's planning documents (see `/docs` if present, or ask the human collaborator for the SRS).
+> [!CRITICAL]
+> **MANDATORY AGENT DIRECTIVE — READ & SCAN THIS FILE FIRST**:
+> Every AI agent (Antigravity or any compatible assistant) MUST thoroughly read and scan this entire file (`.agents/AGENTS.md`) at the start of every session BEFORE proposing plans, running commands, or modifying any code. All hard boundaries, tech stack specifications, and workflows outlined here take precedence over any default assumptions.
+
+These rules apply to every AI agent working in this repository. Read this fully before making changes. These rules exist to keep the build aligned with the project's planning documents (see `/docs` if present, or ask the human collaborator for the SRS).
 
 ## Project Summary
 
