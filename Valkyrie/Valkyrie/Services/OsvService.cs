@@ -1,10 +1,11 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Caching.Memory;
 using Valkyrie.Models;
 
 namespace Valkyrie.Services
@@ -12,11 +13,29 @@ namespace Valkyrie.Services
     public class OsvService : IOsvService
     {
         private readonly HttpClient _httpClient;
+        private readonly IMemoryCache? _cache;
 
-        public OsvService(HttpClient httpClient)
+        private static readonly TimeSpan PackageCacheDuration = TimeSpan.FromHours(2);
+        private static readonly TimeSpan PackageSlidingExpiration = TimeSpan.FromMinutes(30);
+        private static readonly TimeSpan VulnDetailCacheDuration = TimeSpan.FromHours(6);
+
+        public OsvService(HttpClient httpClient, IMemoryCache? cache = null)
         {
             _httpClient = httpClient;
             _httpClient.Timeout = TimeSpan.FromSeconds(15);
+            _cache = cache;
+        }
+
+        private static string GetPackageCacheKey(DependencyPackage package)
+        {
+            string pkgName = package.PackageName?.Trim().ToLowerInvariant() ?? string.Empty;
+            string version = package.Version?.Trim().ToLowerInvariant() ?? string.Empty;
+            return $"osv:pkg:{package.Ecosystem}:{pkgName}:{version}";
+        }
+
+        private static string GetVulnDetailCacheKey(string vulnId)
+        {
+            return $"osv:vuln:{vulnId.Trim().ToUpperInvariant()}";
         }
 
         public async Task<(bool Success, string? ErrorMessage)> CheckVulnerabilitiesAsync(List<DependencyPackage> packages)
@@ -36,88 +55,150 @@ namespace Valkyrie.Services
                 return (true, null);
             }
 
-            // 2. Prepare the batch request body
-            var queries = queryablePackages.Select(p => new
-            {
-                package = new
-                {
-                    name = p.PackageName,
-                    ecosystem = p.Ecosystem switch
-                    {
-                        Ecosystem.Npm => "npm",
-                        Ecosystem.NuGet => "NuGet",
-                        Ecosystem.Python => "PyPI",
-                        Ecosystem.Maven => "Maven",
-                        Ecosystem.Go => "Go",
-                        Ecosystem.Ruby => "RubyGems",
-                        Ecosystem.PHP => "Packagist",
-                        _ => p.Ecosystem.ToString()
-                    }
-                },
-                version = p.Version
-            }).ToList();
-
-            var requestBody = new { queries };
-            string jsonRequest = JsonSerializer.Serialize(requestBody);
-
-            HttpResponseMessage response;
-            try
-            {
-                var content = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
-                response = await _httpClient.PostAsync("https://api.osv.dev/v1/querybatch", content);
-            }
-            catch (Exception)
-            {
-                // Failed to contact OSV.dev
-                return (false, "Some packages could not be checked due to a temporary issue — try rescanning for complete results.");
-            }
-
-            if (!response.IsSuccessStatusCode)
-            {
-                return (false, "Some packages could not be checked due to a temporary issue — try rescanning for complete results.");
-            }
-
-            // 3. Parse the batch response
-            string jsonResponse;
-            try
-            {
-                jsonResponse = await response.Content.ReadAsStringAsync();
-            }
-            catch
-            {
-                return (false, "Some packages could not be checked due to a temporary issue — try rescanning for complete results.");
-            }
-
-            OsvBatchResponse? batchResponse;
-            try
-            {
-                batchResponse = JsonSerializer.Deserialize<OsvBatchResponse>(jsonResponse, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
-            }
-            catch
-            {
-                return (false, "Some packages could not be checked due to a temporary issue — try rescanning for complete results.");
-            }
-
-            if (batchResponse?.Results == null || batchResponse.Results.Count != queryablePackages.Count)
-            {
-                return (false, "Some packages could not be checked due to a temporary issue — try rescanning for complete results.");
-            }
-
-            // Map vulnerable packages to their vulnerability IDs
-            var vulnsToFetch = new HashSet<string>();
+            // 2. Check cache for packages already resolved
+            var uncachedPackages = new List<DependencyPackage>();
             var packageVulnIds = new Dictionary<DependencyPackage, List<string>>();
+            var vulnsToFetch = new HashSet<string>();
 
-            for (int i = 0; i < queryablePackages.Count; i++)
+            foreach (var pkg in queryablePackages)
             {
-                var pkg = queryablePackages[i];
-                var result = batchResponse.Results[i];
-                if (result.Vulns != null && result.Vulns.Count > 0)
+                string cacheKey = GetPackageCacheKey(pkg);
+                if (_cache != null && _cache.TryGetValue(cacheKey, out List<string>? cachedIds) && cachedIds != null)
                 {
-                    var ids = result.Vulns.Select(v => v.Id).Where(id => !string.IsNullOrEmpty(id)).ToList();
-                    if (ids.Count > 0)
+                    if (cachedIds.Count > 0)
+                    {
+                        packageVulnIds[pkg] = cachedIds;
+                        foreach (var id in cachedIds)
+                        {
+                            vulnsToFetch.Add(id);
+                        }
+                    }
+                }
+                else
+                {
+                    uncachedPackages.Add(pkg);
+                }
+            }
+
+            // 3. Query OSV.dev batch endpoint for uncached packages only (deduplicating identical package queries)
+            if (uncachedPackages.Count > 0)
+            {
+                var uniqueUncachedTuples = uncachedPackages
+                    .GroupBy(p => (p.Ecosystem, Name: p.PackageName.Trim(), Version: p.Version?.Trim() ?? string.Empty))
+                    .Select(g => g.First())
+                    .ToList();
+
+                var queries = uniqueUncachedTuples.Select(p => new
+                {
+                    package = new
+                    {
+                        name = p.PackageName,
+                        ecosystem = p.Ecosystem switch
+                        {
+                            Ecosystem.Npm => "npm",
+                            Ecosystem.NuGet => "NuGet",
+                            Ecosystem.Python => "PyPI",
+                            Ecosystem.Maven => "Maven",
+                            Ecosystem.Go => "Go",
+                            Ecosystem.Ruby => "RubyGems",
+                            Ecosystem.PHP => "Packagist",
+                            _ => p.Ecosystem.ToString()
+                        }
+                    },
+                    version = p.Version
+                }).ToList();
+
+                var requestBody = new { queries };
+                string jsonRequest = JsonSerializer.Serialize(requestBody);
+
+                HttpResponseMessage response;
+                try
+                {
+                    var content = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
+                    response = await _httpClient.PostAsync("https://api.osv.dev/v1/querybatch", content);
+                }
+                catch (Exception)
+                {
+                    // If we have some cached results, still populate them before failing/warning
+                    PopulateCachedVulnerabilities(packageVulnIds);
+                    return (false, "Some packages could not be checked due to a temporary issue — try rescanning for complete results.");
+                }
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    PopulateCachedVulnerabilities(packageVulnIds);
+                    return (false, "Some packages could not be checked due to a temporary issue — try rescanning for complete results.");
+                }
+
+                string jsonResponse;
+                try
+                {
+                    jsonResponse = await response.Content.ReadAsStringAsync();
+                }
+                catch
+                {
+                    PopulateCachedVulnerabilities(packageVulnIds);
+                    return (false, "Some packages could not be checked due to a temporary issue — try rescanning for complete results.");
+                }
+
+                OsvBatchResponse? batchResponse;
+                try
+                {
+                    batchResponse = JsonSerializer.Deserialize<OsvBatchResponse>(jsonResponse, new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+                }
+                catch
+                {
+                    PopulateCachedVulnerabilities(packageVulnIds);
+                    return (false, "Some packages could not be checked due to a temporary issue — try rescanning for complete results.");
+                }
+
+                if (batchResponse?.Results == null || batchResponse.Results.Count != uniqueUncachedTuples.Count)
+                {
+                    PopulateCachedVulnerabilities(packageVulnIds);
+                    return (false, "Some packages could not be checked due to a temporary issue — try rescanning for complete results.");
+                }
+
+                // Map results back to unique package tuples
+                var tupleVulnMap = new Dictionary<(Ecosystem, string, string), List<string>>();
+
+                for (int i = 0; i < uniqueUncachedTuples.Count; i++)
+                {
+                    var tuplePkg = uniqueUncachedTuples[i];
+                    var result = batchResponse.Results[i];
+                    var ids = new List<string>();
+
+                    if (result.Vulns != null && result.Vulns.Count > 0)
+                    {
+                        ids = result.Vulns
+                            .Select(v => v.Id)
+                            .Where(id => !string.IsNullOrEmpty(id))
+                            .Distinct()
+                            .ToList();
+                    }
+
+                    var key = (tuplePkg.Ecosystem, tuplePkg.PackageName.Trim(), tuplePkg.Version?.Trim() ?? string.Empty);
+                    tupleVulnMap[key] = ids;
+
+                    // Cache the vulnerability IDs for this package (empty list if clean)
+                    if (_cache != null)
+                    {
+                        string cacheKey = GetPackageCacheKey(tuplePkg);
+                        _cache.Set(cacheKey, ids, new MemoryCacheEntryOptions
+                        {
+                            AbsoluteExpirationRelativeToNow = PackageCacheDuration,
+                            SlidingExpiration = PackageSlidingExpiration
+                        });
+                    }
+                }
+
+                // Assign back to each uncached package instance
+                foreach (var pkg in uncachedPackages)
+                {
+                    var key = (pkg.Ecosystem, pkg.PackageName.Trim(), pkg.Version?.Trim() ?? string.Empty);
+                    if (tupleVulnMap.TryGetValue(key, out var ids) && ids.Count > 0)
                     {
                         packageVulnIds[pkg] = ids;
                         foreach (var id in ids)
@@ -128,13 +209,29 @@ namespace Valkyrie.Services
                 }
             }
 
-            // 4. Fetch details for each unique vulnerability ID
+            // 4. Fetch details for each unique vulnerability ID (using cache where available, throttled)
             var vulnDetails = new Dictionary<string, VulnerabilityDetail>();
-            bool detailsFetchPartialFailure = false;
+            var vulnsToFetchRemotely = new List<string>();
 
-            if (vulnsToFetch.Count > 0)
+            foreach (var id in vulnsToFetch)
             {
-                var fetchTasks = vulnsToFetch.Select(async id =>
+                string detailCacheKey = GetVulnDetailCacheKey(id);
+                if (_cache != null && _cache.TryGetValue(detailCacheKey, out VulnerabilityDetail? cachedDetail) && cachedDetail != null)
+                {
+                    vulnDetails[id] = cachedDetail;
+                }
+                else
+                {
+                    vulnsToFetchRemotely.Add(id);
+                }
+            }
+
+            int detailsFetchFailed = 0;
+
+            if (vulnsToFetchRemotely.Count > 0)
+            {
+                var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = 8 };
+                await Parallel.ForEachAsync(vulnsToFetchRemotely, parallelOptions, async (id, ct) =>
                 {
                     try
                     {
@@ -145,19 +242,26 @@ namespace Valkyrie.Services
                             {
                                 vulnDetails[id] = detail;
                             }
+
+                            if (_cache != null)
+                            {
+                                string detailCacheKey = GetVulnDetailCacheKey(id);
+                                _cache.Set(detailCacheKey, detail, new MemoryCacheEntryOptions
+                                {
+                                    AbsoluteExpirationRelativeToNow = VulnDetailCacheDuration
+                                });
+                            }
                         }
                         else
                         {
-                            detailsFetchPartialFailure = true;
+                            Interlocked.Exchange(ref detailsFetchFailed, 1);
                         }
                     }
                     catch
                     {
-                        detailsFetchPartialFailure = true;
+                        Interlocked.Exchange(ref detailsFetchFailed, 1);
                     }
                 });
-
-                await Task.WhenAll(fetchTasks);
             }
 
             // 5. Populate vulnerabilities on packages
@@ -190,12 +294,44 @@ namespace Valkyrie.Services
                 }
             }
 
-            if (detailsFetchPartialFailure)
+            if (detailsFetchFailed == 1)
             {
                 return (true, "Some packages could not be checked due to a temporary issue — try rescanning for complete results.");
             }
 
             return (true, null);
+        }
+
+        private void PopulateCachedVulnerabilities(Dictionary<DependencyPackage, List<string>> packageVulnIds)
+        {
+            if (packageVulnIds.Count == 0) return;
+
+            foreach (var kvp in packageVulnIds)
+            {
+                var pkg = kvp.Key;
+                foreach (var id in kvp.Value)
+                {
+                    string detailCacheKey = GetVulnDetailCacheKey(id);
+                    if (_cache != null && _cache.TryGetValue(detailCacheKey, out VulnerabilityDetail? detail) && detail != null)
+                    {
+                        pkg.Vulnerabilities.Add(new VulnerabilityDetail
+                        {
+                            Id = detail.Id,
+                            Description = detail.Description,
+                            Severity = detail.Severity
+                        });
+                    }
+                    else
+                    {
+                        pkg.Vulnerabilities.Add(new VulnerabilityDetail
+                        {
+                            Id = id,
+                            Description = "Details could not be retrieved from OSV.dev.",
+                            Severity = Severity.Medium
+                        });
+                    }
+                }
+            }
         }
 
         private async Task<VulnerabilityDetail?> FetchVulnerabilityDetailAsync(string id)
