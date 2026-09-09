@@ -28,7 +28,9 @@ namespace Valkyrie.Services
 
         private static string GetPackageCacheKey(DependencyPackage package)
         {
-            return $"osv:pkg:{package.Ecosystem}:{package.PackageName.Trim().ToLowerInvariant()}:{package.Version.Trim().ToLowerInvariant()}";
+            string pkgName = package.PackageName?.Trim().ToLowerInvariant() ?? string.Empty;
+            string version = package.Version?.Trim().ToLowerInvariant() ?? string.Empty;
+            return $"osv:pkg:{package.Ecosystem}:{pkgName}:{version}";
         }
 
         private static string GetVulnDetailCacheKey(string vulnId)
@@ -78,10 +80,15 @@ namespace Valkyrie.Services
                 }
             }
 
-            // 3. Query OSV.dev batch endpoint for uncached packages only
+            // 3. Query OSV.dev batch endpoint for uncached packages only (deduplicating identical package queries)
             if (uncachedPackages.Count > 0)
             {
-                var queries = uncachedPackages.Select(p => new
+                var uniqueUncachedTuples = uncachedPackages
+                    .GroupBy(p => (p.Ecosystem, Name: p.PackageName.Trim(), Version: p.Version?.Trim() ?? string.Empty))
+                    .Select(g => g.First())
+                    .ToList();
+
+                var queries = uniqueUncachedTuples.Select(p => new
                 {
                     package = new
                     {
@@ -113,13 +120,13 @@ namespace Valkyrie.Services
                 catch (Exception)
                 {
                     // If we have some cached results, still populate them before failing/warning
-                    PopulateCachedVulnerabilities(packageVulnIds, vulnsToFetch);
+                    PopulateCachedVulnerabilities(packageVulnIds);
                     return (false, "Some packages could not be checked due to a temporary issue — try rescanning for complete results.");
                 }
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    PopulateCachedVulnerabilities(packageVulnIds, vulnsToFetch);
+                    PopulateCachedVulnerabilities(packageVulnIds);
                     return (false, "Some packages could not be checked due to a temporary issue — try rescanning for complete results.");
                 }
 
@@ -130,7 +137,7 @@ namespace Valkyrie.Services
                 }
                 catch
                 {
-                    PopulateCachedVulnerabilities(packageVulnIds, vulnsToFetch);
+                    PopulateCachedVulnerabilities(packageVulnIds);
                     return (false, "Some packages could not be checked due to a temporary issue — try rescanning for complete results.");
                 }
 
@@ -144,19 +151,22 @@ namespace Valkyrie.Services
                 }
                 catch
                 {
-                    PopulateCachedVulnerabilities(packageVulnIds, vulnsToFetch);
+                    PopulateCachedVulnerabilities(packageVulnIds);
                     return (false, "Some packages could not be checked due to a temporary issue — try rescanning for complete results.");
                 }
 
-                if (batchResponse?.Results == null || batchResponse.Results.Count != uncachedPackages.Count)
+                if (batchResponse?.Results == null || batchResponse.Results.Count != uniqueUncachedTuples.Count)
                 {
-                    PopulateCachedVulnerabilities(packageVulnIds, vulnsToFetch);
+                    PopulateCachedVulnerabilities(packageVulnIds);
                     return (false, "Some packages could not be checked due to a temporary issue — try rescanning for complete results.");
                 }
 
-                for (int i = 0; i < uncachedPackages.Count; i++)
+                // Map results back to unique package tuples
+                var tupleVulnMap = new Dictionary<(Ecosystem, string, string), List<string>>();
+
+                for (int i = 0; i < uniqueUncachedTuples.Count; i++)
                 {
-                    var pkg = uncachedPackages[i];
+                    var tuplePkg = uniqueUncachedTuples[i];
                     var result = batchResponse.Results[i];
                     var ids = new List<string>();
 
@@ -167,21 +177,15 @@ namespace Valkyrie.Services
                             .Where(id => !string.IsNullOrEmpty(id))
                             .Distinct()
                             .ToList();
-
-                        if (ids.Count > 0)
-                        {
-                            packageVulnIds[pkg] = ids;
-                            foreach (var id in ids)
-                            {
-                                vulnsToFetch.Add(id);
-                            }
-                        }
                     }
+
+                    var key = (tuplePkg.Ecosystem, tuplePkg.PackageName.Trim(), tuplePkg.Version?.Trim() ?? string.Empty);
+                    tupleVulnMap[key] = ids;
 
                     // Cache the vulnerability IDs for this package (empty list if clean)
                     if (_cache != null)
                     {
-                        string cacheKey = GetPackageCacheKey(pkg);
+                        string cacheKey = GetPackageCacheKey(tuplePkg);
                         _cache.Set(cacheKey, ids, new MemoryCacheEntryOptions
                         {
                             AbsoluteExpirationRelativeToNow = PackageCacheDuration,
@@ -189,11 +193,25 @@ namespace Valkyrie.Services
                         });
                     }
                 }
+
+                // Assign back to each uncached package instance
+                foreach (var pkg in uncachedPackages)
+                {
+                    var key = (pkg.Ecosystem, pkg.PackageName.Trim(), pkg.Version?.Trim() ?? string.Empty);
+                    if (tupleVulnMap.TryGetValue(key, out var ids) && ids.Count > 0)
+                    {
+                        packageVulnIds[pkg] = ids;
+                        foreach (var id in ids)
+                        {
+                            vulnsToFetch.Add(id);
+                        }
+                    }
+                }
             }
 
-            // 4. Fetch details for each unique vulnerability ID (using cache where available)
+            // 4. Fetch details for each unique vulnerability ID (using cache where available, throttled)
             var vulnDetails = new Dictionary<string, VulnerabilityDetail>();
-            var vulnsToFetchRemotely = new HashSet<string>();
+            var vulnsToFetchRemotely = new List<string>();
 
             foreach (var id in vulnsToFetch)
             {
@@ -208,11 +226,12 @@ namespace Valkyrie.Services
                 }
             }
 
-            bool detailsFetchPartialFailure = false;
+            int detailsFetchFailed = 0;
 
             if (vulnsToFetchRemotely.Count > 0)
             {
-                var fetchTasks = vulnsToFetchRemotely.Select(async id =>
+                var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = 8 };
+                await Parallel.ForEachAsync(vulnsToFetchRemotely, parallelOptions, async (id, ct) =>
                 {
                     try
                     {
@@ -235,16 +254,14 @@ namespace Valkyrie.Services
                         }
                         else
                         {
-                            detailsFetchPartialFailure = true;
+                            Interlocked.Exchange(ref detailsFetchFailed, 1);
                         }
                     }
                     catch
                     {
-                        detailsFetchPartialFailure = true;
+                        Interlocked.Exchange(ref detailsFetchFailed, 1);
                     }
                 });
-
-                await Task.WhenAll(fetchTasks);
             }
 
             // 5. Populate vulnerabilities on packages
@@ -277,7 +294,7 @@ namespace Valkyrie.Services
                 }
             }
 
-            if (detailsFetchPartialFailure)
+            if (detailsFetchFailed == 1)
             {
                 return (true, "Some packages could not be checked due to a temporary issue — try rescanning for complete results.");
             }
@@ -285,9 +302,7 @@ namespace Valkyrie.Services
             return (true, null);
         }
 
-        private void PopulateCachedVulnerabilities(
-            Dictionary<DependencyPackage, List<string>> packageVulnIds,
-            HashSet<string> vulnsToFetch)
+        private void PopulateCachedVulnerabilities(Dictionary<DependencyPackage, List<string>> packageVulnIds)
         {
             if (packageVulnIds.Count == 0) return;
 

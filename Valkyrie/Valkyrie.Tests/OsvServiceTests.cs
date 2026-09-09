@@ -175,5 +175,155 @@ namespace Valkyrie.Tests
             Assert.Single(packages[1].Vulnerabilities); // pkg2 found vuln
             Assert.Equal(1, batchCallCount); // Batch call only queried pkg2
         }
+
+        [Fact]
+        public async Task CheckVulnerabilitiesAsync_WorksWithoutCacheInstance_ReturnsResultsGracefully()
+        {
+            // Arrange
+            var handlerMock = new Mock<HttpMessageHandler>();
+            var batchResponseJson = JsonSerializer.Serialize(new
+            {
+                results = new[]
+                {
+                    new
+                    {
+                        vulns = new[] { new { id = "GHSA-no-cache" } }
+                    }
+                }
+            });
+
+            var vulnDetailJson = JsonSerializer.Serialize(new
+            {
+                id = "GHSA-no-cache",
+                summary = "Vulnerability without cache",
+                database_specific = new { severity = "CRITICAL" }
+            });
+
+            handlerMock.Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>()
+                )
+                .Returns<HttpRequestMessage, CancellationToken>((req, ct) =>
+                {
+                    if (req.RequestUri!.ToString().Contains("querybatch"))
+                    {
+                        return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                        {
+                            Content = new StringContent(batchResponseJson)
+                        });
+                    }
+
+                    return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                    {
+                        Content = new StringContent(vulnDetailJson)
+                    });
+                });
+
+            var httpClient = new HttpClient(handlerMock.Object);
+            // Pass null for IMemoryCache
+            var service = new OsvService(httpClient, cache: null);
+
+            var packages = new List<DependencyPackage>
+            {
+                new DependencyPackage { PackageName = "pkg-null-cache", Version = "1.0.0", Ecosystem = Ecosystem.Npm }
+            };
+
+            // Act
+            var (success, error) = await service.CheckVulnerabilitiesAsync(packages);
+
+            // Assert
+            Assert.True(success);
+            Assert.Null(error);
+            Assert.Single(packages[0].Vulnerabilities);
+            Assert.Equal("GHSA-no-cache", packages[0].Vulnerabilities[0].Id);
+            Assert.Equal(Severity.Critical, packages[0].Vulnerabilities[0].Severity);
+        }
+
+        [Fact]
+        public async Task CheckVulnerabilitiesAsync_NullOrEmptyVersion_HandlesGracefullyWithoutThrowing()
+        {
+            // Arrange
+            var handlerMock = new Mock<HttpMessageHandler>();
+            var batchResponseJson = JsonSerializer.Serialize(new
+            {
+                results = new[]
+                {
+                    new { vulns = Array.Empty<object>() }
+                }
+            });
+
+            handlerMock.Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>()
+                )
+                .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(batchResponseJson)
+                });
+
+            var httpClient = new HttpClient(handlerMock.Object);
+            var memoryCache = new MemoryCache(new MemoryCacheOptions());
+            var service = new OsvService(httpClient, memoryCache);
+
+            var packages = new List<DependencyPackage>
+            {
+                new DependencyPackage { PackageName = "pkg-no-version", Version = null!, Ecosystem = Ecosystem.Npm }
+            };
+
+            // Act & Assert - should not throw NullReferenceException
+            var (success, error) = await service.CheckVulnerabilitiesAsync(packages);
+            Assert.True(success);
+            Assert.Null(error);
+        }
+
+        [Fact]
+        public async Task CheckVulnerabilitiesAsync_PartialRemoteFailure_PreservesPrecachedVulnerabilities()
+        {
+            // Arrange
+            var handlerMock = new Mock<HttpMessageHandler>();
+
+            handlerMock.Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>()
+                )
+                .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.InternalServerError)); // OSV down
+
+            var httpClient = new HttpClient(handlerMock.Object);
+            var memoryCache = new MemoryCache(new MemoryCacheOptions());
+
+            // Pre-cache pkg1 with a known vulnerability
+            memoryCache.Set("osv:pkg:Npm:pkg-cached:1.0.0", new List<string> { "GHSA-cached-vuln" });
+            memoryCache.Set("osv:vuln:GHSA-CACHED-VULN", new VulnerabilityDetail
+            {
+                Id = "GHSA-cached-vuln",
+                Description = "Pre-cached vulnerability details",
+                Severity = Severity.High
+            });
+
+            var service = new OsvService(httpClient, memoryCache);
+
+            var packages = new List<DependencyPackage>
+            {
+                new DependencyPackage { PackageName = "pkg-cached", Version = "1.0.0", Ecosystem = Ecosystem.Npm },
+                new DependencyPackage { PackageName = "pkg-uncached", Version = "2.0.0", Ecosystem = Ecosystem.Npm }
+            };
+
+            // Act
+            var (success, error) = await service.CheckVulnerabilitiesAsync(packages);
+
+            // Assert: Partial failure returned
+            Assert.False(success);
+            Assert.NotNull(error);
+            // Pre-cached package vulnerabilities are preserved!
+            Assert.Single(packages[0].Vulnerabilities);
+            Assert.Equal("GHSA-cached-vuln", packages[0].Vulnerabilities[0].Id);
+            Assert.Equal(Severity.High, packages[0].Vulnerabilities[0].Severity);
+        }
     }
 }
