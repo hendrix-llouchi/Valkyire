@@ -18,6 +18,9 @@ builder.Services.AddTransient<ICodePatternScanner, CodePatternScanner>();
 // Add Health Checks for Azure / Cloud Probes
 builder.Services.AddHealthChecks();
 
+// Add Application Insights Telemetry & APM (Issue #58)
+builder.Services.AddApplicationInsightsTelemetry();
+
 // Register Inbound Rate Limiting (Layer 9)
 builder.Services.AddRateLimiter(options =>
 {
