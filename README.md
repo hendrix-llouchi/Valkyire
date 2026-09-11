@@ -1,4 +1,4 @@
-﻿# 🛡️ Valkyrie (Valkyrie)
+# 🛡️ Valkyrie
 
 [![GitHub Developer Program](https://img.shields.io/badge/GitHub_Developer_Program-Registered_Integration-181717?style=flat&logo=github&logoColor=white)](https://github.com/developer/register)
 [![GitHub REST API](https://img.shields.io/badge/GitHub_REST_API-v3-blue?style=flat&logo=github)](https://docs.github.com/en/rest)
@@ -86,6 +86,12 @@ sequenceDiagram
 - Accounts are **locked for 5 minutes** after 5 consecutive failed login attempts. Login errors use a generic message to avoid revealing user existence.
 - Dashboard displays full scan history with security grades, ecosystem breakdowns, and issue counts.
 
+### 🛡️ Production Hardening & Cloud Telemetry
+- **Inbound HTTP Rate Limiting**: Enforces strict policies (10 scans/min, 15 auth requests/min) via `Microsoft.AspNetCore.RateLimiting` to guard against denial-of-service and brute force attempts.
+- **In-Memory OSV Caching**: Transparent memory cache (`IMemoryCache`) for OSV.dev package vulnerability lookups, reducing redundant external network requests.
+- **Durable Session Key Persistence**: ASP.NET Core Data Protection session keys stored directly in `ApplicationDbContext` via `Microsoft.AspNetCore.DataProtection.EntityFrameworkCore`, guaranteeing session stability across Azure App Service restarts and scaling.
+- **Application Insights APM & Health Probes**: Integrated `Microsoft.ApplicationInsights.AspNetCore` for real-time latency monitoring, dependency tracking (GitHub, OSV, Groq), and live Azure health probes (`/health`).
+
 ### 🏆 Security Grading
 - Each completed scan receives an overall **security grade** (A–F) based on the number and severity of issues found.
 - Zero issues found is a valid, positive result — graded A with a "No issues found" state, never treated as an error.
@@ -107,11 +113,13 @@ sequenceDiagram
 
 ### NuGet Packages
 
-| Package | Version |
-|---|---|
-| `Microsoft.AspNetCore.Identity.EntityFrameworkCore` | 10.0.9 |
-| `Microsoft.EntityFrameworkCore.SqlServer` | 10.0.9 |
-| `Microsoft.EntityFrameworkCore.Design` | 10.0.9 |
+| Package | Version | Description |
+|---|---|---|
+| `Microsoft.AspNetCore.Identity.EntityFrameworkCore` | 10.0.9 | Identity membership system with EF Core |
+| `Microsoft.EntityFrameworkCore.SqlServer` | 10.0.9 | SQL Server EF Core database provider |
+| `Microsoft.EntityFrameworkCore.Design` | 10.0.9 | EF Core tooling for migrations |
+| `Microsoft.AspNetCore.DataProtection.EntityFrameworkCore` | 10.0.9 | Persistent Data Protection cryptographic keys |
+| `Microsoft.ApplicationInsights.AspNetCore` | 2.23.0 | Application Insights telemetry & APM integration |
 
 ---
 
@@ -270,7 +278,7 @@ The app will be available at `https://localhost:7147` or `http://localhost:5213`
 Execute the unit test suite using the .NET CLI:
 
 ```bash
-dotnet test Valkyrie.Tests/Valkyrie.Tests.csproj
+dotnet test Valkyrie/Valkyrie.slnx
 ```
 
 ---
