@@ -283,6 +283,13 @@ dotnet test Valkyrie/Valkyrie.slnx
 
 ---
 
-## 📜 License
+## 📜 Legal, Privacy & Compliance
+
+> [!NOTE]
+> **Upcoming Additions**: Terms of Service (ToS) and a comprehensive Privacy Policy will be added soon to establish formal data governance, user privacy guarantees, and service terms in alignment with digital regulations (including the Electronic Transactions Act and Data Protection principles).
+
+---
+
+## 📄 License
 
 This project is licensed under the terms of the [MIT License](LICENSE).
