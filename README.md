@@ -288,7 +288,7 @@ dotnet test Valkyrie/Valkyrie.slnx
 Valkyrie is engineered to respect developer privacy and adhere to the **Data Protection Act, 2012 (Act 843)** and the **Electronic Transactions Act, 2008 (Act 772)**.
 
 * 🔐 **Privacy Policy**: Read our full data practices and user rights in [PRIVACY.md](PRIVACY.md).
-* 📜 **Terms of Service**: Full terms governing usage and liability boundaries are coming soon.
+* 📜 **Terms of Use**: Read our formal terms, acceptable use policy, and liability limits in [TERMS_OF_USE.md](TERMS_OF_USE.md).
 
 ---
 
