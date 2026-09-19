@@ -1,4 +1,4 @@
-﻿using Valkyrie.Models;
+using Valkyrie.Models;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 
@@ -12,6 +12,11 @@ namespace Valkyrie.Controllers
         }
 
         public IActionResult Privacy()
+        {
+            return View();
+        }
+
+        public IActionResult Terms()
         {
             return View();
         }
