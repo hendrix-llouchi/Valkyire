@@ -285,8 +285,10 @@ dotnet test Valkyrie/Valkyrie.slnx
 
 ## 📜 Legal, Privacy & Compliance
 
-> [!NOTE]
-> **Upcoming Additions**: Terms of Service (ToS) and a comprehensive Privacy Policy will be added soon to establish formal data governance, user privacy guarantees, and service terms in alignment with digital regulations (including the Electronic Transactions Act and Data Protection principles).
+Valkyrie is engineered to respect developer privacy and adhere to the **Data Protection Act, 2012 (Act 843)** and the **Electronic Transactions Act, 2008 (Act 772)**.
+
+* 🔐 **Privacy Policy**: Read our full data practices and user rights in [PRIVACY.md](PRIVACY.md).
+* 📜 **Terms of Service**: Full terms governing usage and liability boundaries are coming soon.
 
 ---
 
