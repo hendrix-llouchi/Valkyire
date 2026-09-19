@@ -1,6 +1,244 @@
-﻿@{
+@{
     ViewData["Title"] = "Privacy Policy";
 }
-<h1>@ViewData["Title"]</h1>
 
-<p>Use this page to detail your site's privacy policy.</p>
+<div class="py-4">
+    <!-- Breadcrumb / Header Badge -->
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
+        <div>
+            <span class="nb-badge rookie-theme">LEGAL & COMPLIANCE</span>
+            <span class="nb-mono text-muted small ms-2">GHANA DATA PROTECTION ACT, 2012 (ACT 843)</span>
+        </div>
+        <div class="nb-mono text-muted small">
+            LAST UPDATED: SEPTEMBER 2026
+        </div>
+    </div>
+
+    <!-- Main Title Card -->
+    <div class="nb-card rookie-theme mb-4">
+        <div class="nb-card-header">
+            <h1 class="nb-card-title mb-0 fs-3">🛡️ PRIVACY POLICY</h1>
+        </div>
+        <div class="nb-card-body">
+            <p class="fs-5 mb-2 fw-semibold text-dark">
+                Your code and privacy are safeguarded by design.
+            </p>
+            <p class="text-muted mb-0">
+                Valkyrie ("we", "our", or "the Platform") provides automated vulnerability analysis for public GitHub repositories. 
+                This Privacy Policy describes how we collect, handle, and protect your personal information in accordance with 
+                <strong>Ghana's Data Protection Act, 2012 (Act 843)</strong>, the <strong>Electronic Transactions Act, 2008 (Act 772)</strong>, 
+                and modern security practices.
+            </p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Left Column: Core Sections -->
+        <div class="col-lg-8">
+            <!-- 1. Legal Basis -->
+            <div class="nb-card mb-4">
+                <div class="nb-card-header">
+                    <div class="nb-card-title">1. LAWFUL BASIS FOR PROCESSING (ACT 843)</div>
+                </div>
+                <div class="nb-card-body">
+                    <p>Pursuant to <strong>Sections 17–24 of Act 843</strong>, Valkyrie processes personal data strictly under valid statutory grounds:</p>
+                    <ul class="mb-0">
+                        <li class="mb-2"><strong>User Consent:</strong> Obtained when you register an account or initiate a scan.</li>
+                        <li class="mb-2"><strong>Contractual Necessity:</strong> Generating scan reports, preserving scan history, and managing authenticated sessions.</li>
+                        <li class="mb-2"><strong>Legitimate Interests:</strong> Applying IP-based rate limiting (10 scans/min, 15 auth requests/min) to prevent brute-force attacks and denial-of-service abuse.</li>
+                        <li><strong>Legal Compliance:</strong> Adhering to lawful directives from regulatory bodies including the <em>Data Protection Commission (DPC)</em> and the <em>Cyber Security Authority (CSA)</em>.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 2. What We Collect -->
+            <div class="nb-card mb-4">
+                <div class="nb-card-header">
+                    <div class="nb-card-title">2. INFORMATION WE COLLECT</div>
+                </div>
+                <div class="nb-card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="p-3 border border-2 border-dark h-100" style="background: #f8fafc;">
+                                <h6 class="fw-bold text-dark mb-2">👤 Account Credentials</h6>
+                                <p class="small text-muted mb-0">Username and a salted, cryptographic hash of your password (PBKDF2). Plaintext passwords are never stored or logged.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 border border-2 border-dark h-100" style="background: #f8fafc;">
+                                <h6 class="fw-bold text-dark mb-2">🌐 Public Scan Targets</h6>
+                                <p class="small text-muted mb-0">Public repository URLs (e.g. <code>https://github.com/owner/repo</code>) explicitly submitted by you for security inspection.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 border border-2 border-dark h-100" style="background: #f8fafc;">
+                                <h6 class="fw-bold text-dark mb-2">🛡️ Security & Rate Limit Logs</h6>
+                                <p class="small text-muted mb-0">Client IP addresses evaluated purely in-memory via ASP.NET Core RateLimiting partitions to protect service availability.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 border border-2 border-dark h-100" style="background: #f8fafc;">
+                                <h6 class="fw-bold text-dark mb-2">📊 Telemetry & APM</h6>
+                                <p class="small text-muted mb-0">Application performance, error traces, and request latencies monitored via Azure Application Insights.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. What We Never Collect -->
+            <div class="nb-card typical-theme mb-4">
+                <div class="nb-card-header">
+                    <div class="nb-card-title text-danger">3. DATA WE DELIBERATELY DO NOT COLLECT</div>
+                </div>
+                <div class="nb-card-body">
+                    <ul class="mb-0 text-dark">
+                        <li class="mb-2"><strong>NO Private Repositories:</strong> Valkyrie scans public GitHub repositories exclusively. We never request or store private GitHub access tokens, OAuth keys, or SSH credentials.</li>
+                        <li class="mb-2"><strong>NO Financial / Payment Data:</strong> No credit cards, mobile money numbers, or billing info.</li>
+                        <li><strong>NO Sensitive Data:</strong> No biometric, religious, philosophical, or special category data.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 4. Third-Party Sub-processors -->
+            <div class="nb-card mb-4">
+                <div class="nb-card-header">
+                    <div class="nb-card-title">4. THIRD-PARTY SUB-PROCESSORS</div>
+                </div>
+                <div class="nb-card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered border-dark align-middle mb-0">
+                            <thead class="table-light border-dark">
+                                <tr>
+                                    <th>Provider</th>
+                                    <th>Purpose</th>
+                                    <th>Data Disclosed</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>GitHub REST API (v3)</strong></td>
+                                    <td>Tree & manifest fetching</td>
+                                    <td>Public repo paths & file contents</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>OSV.dev</strong></td>
+                                    <td>Vulnerability CVE matching</td>
+                                    <td>Package names & versions (no user PII)</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>AgentRouter (LLM)</strong></td>
+                                    <td>Plain-English AI remediation</td>
+                                    <td>Sanitized code snippets & CVE descriptions</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Microsoft Azure</strong></td>
+                                    <td>Cloud hosting & SQL DB</td>
+                                    <td>Encrypted user accounts & scan records</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. User Rights -->
+            <div class="nb-card adventurer-theme mb-4">
+                <div class="nb-card-header">
+                    <div class="nb-card-title">5. YOUR STATUTORY PRIVACY RIGHTS (ACT 843)</div>
+                </div>
+                <div class="nb-card-body">
+                    <p>Under <strong>Sections 35–38 of Act 843</strong>, you retain full rights over your data:</p>
+                    <div class="row g-2">
+                        <div class="col-sm-6">
+                            <div class="p-2 border border-2 border-dark bg-white">
+                                <strong>Right to Access:</strong> Request a copy of all scan data associated with your account.
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="p-2 border border-2 border-dark bg-white">
+                                <strong>Right to Erasure:</strong> Delete your account and all associated scan history upon request.
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="p-2 border border-2 border-dark bg-white">
+                                <strong>Right to Rectification:</strong> Correct or update any account profile information.
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="p-2 border border-2 border-dark bg-white">
+                                <strong>Right to Object:</strong> Halt processing if conducted in violation of statutory mandates.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Sidebar / Quick Facts -->
+        <div class="col-lg-4">
+            <!-- Cookies Card -->
+            <div class="nb-card mb-4">
+                <div class="nb-card-header">
+                    <div class="nb-card-title">🍪 FUNCTIONAL COOKIES</div>
+                </div>
+                <div class="nb-card-body">
+                    <p class="small text-muted mb-2">
+                        Valkyrie uses strictly necessary, functional cookies to maintain your login session:
+                    </p>
+                    <div class="border border-2 border-dark p-2 bg-light nb-mono small mb-2">
+                        .AspNetCore.Identity.Application
+                    </div>
+                    <ul class="small mb-0 text-muted ps-3">
+                        <li><code>HttpOnly = true</code></li>
+                        <li><code>Secure = true</code> (HTTPS)</li>
+                        <li><code>SameSite = Lax</code></li>
+                    </ul>
+                    <hr class="my-2" />
+                    <span class="badge bg-success border border-dark text-white rounded-0">ZERO AD TRACKING</span>
+                </div>
+            </div>
+
+            <!-- Security Controls Card -->
+            <div class="nb-card master-theme mb-4">
+                <div class="nb-card-header">
+                    <div class="nb-card-title">🔒 TECHNICAL CONTROLS</div>
+                </div>
+                <div class="nb-card-body">
+                    <ul class="small mb-0 ps-3">
+                        <li class="mb-2"><strong>TLS 1.2 / 1.3:</strong> Complete encryption in transit.</li>
+                        <li class="mb-2"><strong>EF Core Data Protection:</strong> Session keys persisted in SQL Server.</li>
+                        <li class="mb-2"><strong>Layer 9 Rate Limiting:</strong> Enforces 10 scans/min and 15 auth req/min.</li>
+                        <li><strong>Zero Plaintext Credentials:</strong> High-iteration salted password hashes.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Supervisory Authority -->
+            <div class="nb-card mb-4">
+                <div class="nb-card-header">
+                    <div class="nb-card-title">⚖️ SUPERVISORY BODY</div>
+                </div>
+                <div class="nb-card-body small">
+                    <p class="mb-2">Inquiries and statutory complaints may be lodged with the regulatory commission:</p>
+                    <p class="fw-bold mb-1">Data Protection Commission (DPC) Ghana</p>
+                    <p class="mb-2 text-muted">Statutory regulator under Act 843.</p>
+                    <a href="https://www.dataprotection.org.gh" target="_blank" rel="noopener noreferrer" class="nb-btn nb-btn-secondary d-block text-center py-1">
+                        VISIT DPC PORTAL &rarr;
+                    </a>
+                </div>
+            </div>
+
+            <!-- Contact Box -->
+            <div class="nb-card">
+                <div class="nb-card-body text-center">
+                    <div class="fw-bold mb-2">QUESTIONS OR ERASURE REQUESTS?</div>
+                    <p class="small text-muted mb-3">Open a ticket or issue on our official open-source repository.</p>
+                    <a href="https://github.com/hendrix-llouchi/Valkyire" target="_blank" rel="noopener noreferrer" class="nb-btn nb-btn-primary d-block text-center">
+                        VALKYRIE GITHUB REPO
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
