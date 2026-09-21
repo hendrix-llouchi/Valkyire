@@ -46,6 +46,10 @@
                         <li class="nav-item">
                             <a class="nav-link nb-nav-link px-3" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
                         </li>
+                        <span class="nb-nav-divider d-none d-md-inline">|</span>
+                        <li class="nav-item">
+                            <a class="nav-link nb-nav-link px-3" asp-area="" asp-controller="Home" asp-action="Terms">Terms</a>
+                        </li>
                     </ul>
                     <partial name="_LoginPartial" />
                 </div>
@@ -65,8 +69,10 @@
                     <div class="nb-footer-brand">VALKYRIE</div>
                     <div class="nb-footer-subtext">2026. Built for builders.</div>
                 </div>
-                <div class="col-md-6 text-center text-md-end nb-footer-links">
+                <div class="col-md-6 text-center text-md-end nb-footer-links d-flex justify-content-center justify-content-md-end gap-3">
                     <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy Policy</a>
+                    <span class="text-muted">|</span>
+                    <a asp-area="" asp-controller="Home" asp-action="Terms">Terms of Use</a>
                 </div>
             </div>
         </div>

@@ -1,0 +1,188 @@
+@{
+    ViewData["Title"] = "Terms of Use";
+}
+
+<div class="py-4">
+    <!-- Breadcrumb / Header Badge -->
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
+        <div>
+            <span class="nb-badge adventurer-theme">USER AGREEMENT</span>
+            <span class="nb-mono text-muted small ms-2">ELECTRONIC TRANSACTIONS ACT, 2008 (ACT 772)</span>
+        </div>
+        <div class="nb-mono text-muted small">
+            LAST UPDATED: SEPTEMBER 2026
+        </div>
+    </div>
+
+    <!-- Main Title Card -->
+    <div class="nb-card adventurer-theme mb-4">
+        <div class="nb-card-header">
+            <h1 class="nb-card-title mb-0 fs-3">📜 TERMS OF USE</h1>
+        </div>
+        <div class="nb-card-body">
+            <p class="fs-5 mb-2 fw-semibold text-dark">
+                Clear rules, transparent security boundaries, and zero hidden gotchas.
+            </p>
+            <p class="text-muted mb-0">
+                These Terms of Use constitute a legally binding electronic agreement pursuant to 
+                <strong>Ghana's Electronic Transactions Act, 2008 (Act 772)</strong>. By creating an account, 
+                logging in, or submitting a repository URL to Valkyrie, you agree to comply with these terms and our Acceptable Use Policy.
+            </p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Left Column: Core Terms -->
+        <div class="col-lg-8">
+            <!-- 1. Description of Service -->
+            <div class="nb-card mb-4">
+                <div class="nb-card-header">
+                    <div class="nb-card-title">1. DESCRIPTION OF SERVICE</div>
+                </div>
+                <div class="nb-card-body">
+                    <p>Valkyrie provides an on-demand, web-based vulnerability scanning and code intelligence pipeline for open-source repositories:</p>
+                    <ul class="mb-0">
+                        <li class="mb-2"><strong>Dependency Manifest Parsing:</strong> Ingests public GitHub file trees and scans manifests (<code>package.json</code>, <code>.csproj</code>, <code>requirements.txt</code>).</li>
+                        <li class="mb-2"><strong>CVE Database Matching:</strong> Cross-references packages against the open-source OSV.dev vulnerability database.</li>
+                        <li class="mb-2"><strong>Static Pattern Scanning:</strong> Detects hardcoded secrets, raw SQL concatenation, exposed configurations, and unencrypted HTTP endpoints.</li>
+                        <li><strong>AI Explanations:</strong> Generates plain-English risk descriptions and suggested code fixes via AgentRouter LLM endpoints.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 2. Acceptable Use Policy -->
+            <div class="nb-card mb-4">
+                <div class="nb-card-header">
+                    <div class="nb-card-title">2. ACCEPTABLE USE & CYBERSECURITY SAFEGUARDS (ACT 1038)</div>
+                </div>
+                <div class="nb-card-body">
+                    <p class="fw-semibold text-dark mb-2">In compliance with Ghana's Cybersecurity Act, 2020 (Act 1038), you agree to the following rules:</p>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="p-3 border border-2 border-dark h-100 bg-light">
+                                <h6 class="fw-bold text-success mb-1">✅ Authorized Repositories Only</h6>
+                                <p class="small text-muted mb-0">You may only submit public repositories that you own, maintain, or have explicit authorization/license to inspect.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 border border-2 border-dark h-100 bg-light">
+                                <h6 class="fw-bold text-danger mb-1">❌ No Malicious Exploitation</h6>
+                                <p class="small text-muted mb-0">You may not use Valkyrie to discover vulnerabilities for extortion, unauthorized penetration, or malicious exploitation.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 border border-2 border-dark h-100 bg-light">
+                                <h6 class="fw-bold text-danger mb-1">❌ Respect Rate Limits</h6>
+                                <p class="small text-muted mb-0">Do not circumvent platform rate limiters (10 scans/min, 15 logins/min) using automated bots, scrapers, or proxies.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 border border-2 border-dark h-100 bg-light">
+                                <h6 class="fw-bold text-danger mb-1">❌ No Infrastructure Tampering</h6>
+                                <p class="small text-muted mb-0">Do not engage in denial-of-service (DoS) attempts, malware delivery, or unauthorized reverse-engineering.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. System Boundaries -->
+            <div class="nb-card rookie-theme mb-4">
+                <div class="nb-card-header">
+                    <div class="nb-card-title">3. ARCHITECTURAL BOUNDARIES</div>
+                </div>
+                <div class="nb-card-body">
+                    <ul class="mb-0 text-dark">
+                        <li class="mb-2"><strong>Public Repositories Only:</strong> Valkyrie has zero private repository access and does not ask for or store private GitHub tokens.</li>
+                        <li class="mb-2"><strong>No Automatic Code Modification:</strong> Valkyrie only suggests code fixes in text/UI. We never push commits, modify files, or open pull requests on your repositories.</li>
+                        <li class="mb-2"><strong>Scan-on-Demand:</strong> Scans occur strictly when requested. There is no background polling or continuous monitoring.</li>
+                        <li><strong>Supported Ecosystems:</strong> Full support for <em>npm</em> and <em>NuGet</em>; code pattern scanning for <em>Python</em> (no Python package vulnerability checks).</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 4. Intellectual Property -->
+            <div class="nb-card mb-4">
+                <div class="nb-card-header">
+                    <div class="nb-card-title">4. INTELLECTUAL PROPERTY & CODE OWNERSHIP (ACT 690)</div>
+                </div>
+                <div class="nb-card-body">
+                    <p class="mb-2">
+                        <strong>Your Code Belongs to You:</strong> In accordance with the <em>Copyright Act, 2005 (Act 690)</em>, you retain 100% of all intellectual property, copyright, and title in your source code and repositories. Valkyrie claims no ownership whatsoever over submitted code.
+                    </p>
+                    <p class="mb-0 text-muted small">
+                        Valkyrie's platform software, design system, branding, and documentation are the exclusive property of Valkyrie and protected under copyright laws.
+                    </p>
+                </div>
+            </div>
+
+            <!-- 5. Disclaimers & Limitation of Liability -->
+            <div class="nb-card typical-theme mb-4">
+                <div class="nb-card-header">
+                    <div class="nb-card-title text-danger">5. SECURITY DISCLAIMER & LIMITATION OF LIABILITY (ACT 772)</div>
+                </div>
+                <div class="nb-card-body">
+                    <p class="small text-dark mb-2">
+                        <strong>"AS IS" WARRANTY:</strong> Valkyrie is provided on an "as is" and "as available" basis. While we strive for accuracy, static regex matching and open CVE databases cannot detect 100% of vulnerabilities or replace manual penetration testing.
+                    </p>
+                    <p class="small text-dark mb-2">
+                        <strong>AI SUGGESTIONS:</strong> AI-generated remediation snippets are guidance only. You must test and validate any suggested code changes prior to deploying to production.
+                    </p>
+                    <p class="small text-dark mb-0">
+                        <strong>LIABILITY CAP:</strong> To the maximum extent permitted by Act 772, Valkyrie and its contributors shall not be liable for any indirect, consequential, or incidental damages resulting from your use of the platform.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Summary & Governance -->
+        <div class="col-lg-4">
+            <!-- Governing Law Card -->
+            <div class="nb-card master-theme mb-4">
+                <div class="nb-card-header">
+                    <div class="nb-card-title">⚖️ GOVERNING LAW</div>
+                </div>
+                <div class="nb-card-body small">
+                    <p class="mb-2">These Terms are governed by and construed under the laws of the <strong>Republic of Ghana</strong>:</p>
+                    <ul class="ps-3 mb-3 text-dark">
+                        <li class="mb-1">Electronic Transactions Act, 2008 (Act 772)</li>
+                        <li class="mb-1">Data Protection Act, 2012 (Act 843)</li>
+                        <li class="mb-1">Cybersecurity Act, 2020 (Act 1038)</li>
+                    </ul>
+                    <div class="p-2 border border-2 border-dark bg-white small text-muted">
+                        Disputes are subject to the exclusive jurisdiction of the courts of Ghana.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Account Security Card -->
+            <div class="nb-card mb-4">
+                <div class="nb-card-header">
+                    <div class="nb-card-title">🛡️ ACCOUNT SECURITY</div>
+                </div>
+                <div class="nb-card-body small text-muted">
+                    <p class="mb-2">To safeguard user accounts against unauthorized access:</p>
+                    <ul class="ps-3 mb-0">
+                        <li class="mb-2"><strong>5-Minute Lockout:</strong> Triggered after 5 failed login attempts.</li>
+                        <li class="mb-2"><strong>Generic Error Messages:</strong> Prevents email/username enumeration.</li>
+                        <li><strong>Encrypted Sessions:</strong> Secured with ASP.NET Data Protection keys.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Navigation Links -->
+            <div class="nb-card">
+                <div class="nb-card-body text-center">
+                    <div class="fw-bold mb-2">REVIEW PRIVACY PRACTICES</div>
+                    <p class="small text-muted mb-3">Learn how your data is collected and protected under Act 843.</p>
+                    <a asp-controller="Home" asp-action="Privacy" class="nb-btn nb-btn-secondary d-block text-center py-2 mb-2">
+                        READ PRIVACY POLICY
+                    </a>
+                    <a href="https://github.com/hendrix-llouchi/Valkyire" target="_blank" rel="noopener noreferrer" class="nb-btn nb-btn-primary d-block text-center py-2">
+                        VALKYRIE GITHUB
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
